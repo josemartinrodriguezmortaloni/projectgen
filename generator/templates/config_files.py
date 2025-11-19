@@ -633,19 +633,12 @@ def _create_docker_compose_template() -> FileTemplate:
             container_name: mi-api
             restart: unless-stopped
             environment:
-              # Database - usar 'db' (nombre del servicio Docker)
               DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/mi_api
-              # Redis - usar 'redis' (nombre del servicio Docker)
               REDIS_URL: redis://redis:6379/0
               REDIS_ENABLED: "true"
-              # Security
               SECRET_KEY: your-secret-key-change-in-production-please-use-a-long-random-string
               ALGORITHM: HS256
               ACCESS_TOKEN_EXPIRE_MINUTES: 30
-              # CORS
-              CORS_ORIGINS: '["*"]'
-            env_file:
-              - .env
             ports:
               - "8000:8000"
             depends_on:
