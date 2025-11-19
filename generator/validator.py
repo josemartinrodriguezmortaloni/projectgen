@@ -29,14 +29,14 @@ class Validator(ABC):
     Cada validador puede tener un siguiente validador en la cadena.
     Si la validación pasa, delega al siguiente; si falla, lanza excepción.
     """
-    
+
     def __init__(self, next_validator: 'Validator | None' = None):
         """
         Args:
             next_validator: Siguiente validador en la cadena (opcional).
         """
         self._next = next_validator
-    
+
     def validate(self, project_name: str, target_path: Path) -> None:
         """
         Template Method (GoF): Define estructura fija del algoritmo.
@@ -54,7 +54,7 @@ class Validator(ABC):
         self._do_validate(project_name, target_path)
         if self._next:
             self._next.validate(project_name, target_path)
-    
+
     @abstractmethod
     def _do_validate(self, project_name: str, target_path: Path) -> None:
         """
@@ -81,7 +81,7 @@ class ProjectNameValidator(Validator):
     - Solo contenga letras, números, guiones y guiones bajos
     - Tenga al menos 2 caracteres
     """
-    
+
     def _do_validate(self, project_name: str, target_path: Path) -> None:
         """
         Valida formato del nombre del proyecto.
@@ -103,7 +103,7 @@ class DirectoryExistsValidator(Validator):
     
     Verifica que el directorio de destino no exista o esté vacío.
     """
-    
+
     def _do_validate(self, project_name: str, target_path: Path) -> None:
         """
         Valida que el directorio no exista o esté vacío.
@@ -124,7 +124,7 @@ class WritablePathValidator(Validator):
     
     Verifica que el directorio padre exista y tenga permisos de escritura.
     """
-    
+
     def _do_validate(self, project_name: str, target_path: Path) -> None:
         """
         Valida permisos de escritura en directorio padre.

@@ -17,7 +17,6 @@ from rich.tree import Tree
 from generator.creator import ProjectCreator
 from generator.validator import ValidationError, create_validator_chain
 
-
 console = Console()
 
 
@@ -33,14 +32,14 @@ class CLI:
     - Validar entrada
     - Delegar creación a ProjectCreator
     """
-    
+
     def __init__(self):
         """
         Inicializa CLI con cadena de validadores y parser.
         """
         self._validator_chain = create_validator_chain()
         self._parser = self._create_parser()
-    
+
     def _create_parser(self) -> argparse.ArgumentParser:
         """
         Information Expert (GRASP): Conoce estructura de args.
@@ -54,47 +53,53 @@ class CLI:
             epilog="Ejemplo: python -m template-proyects mi-api --hash-algo argon2\n"
                    "         python -m template-proyects  # Modo interactivo completo"
         )
-        
+
         parser.add_argument(
             "project_name",
             nargs="?",  # Make optional
             help="Nombre del proyecto (ej: mi-api, backend-service). Si no se provee, se preguntará interactivamente"
         )
-        
+
         parser.add_argument(
             "--output-dir",
             type=Path,
             default=Path.cwd(),
             help="Directorio donde crear el proyecto (default: directorio actual)"
         )
-        
+
         parser.add_argument(
             "--overwrite",
             action="store_true",
             help="Sobrescribir proyecto existente"
         )
-        
+
         parser.add_argument(
             "--no-docker",
             action="store_true",
             help="No generar Dockerfile ni docker-compose.yml"
         )
-        
+
         parser.add_argument(
             "--no-tests",
             action="store_true",
             help="No generar directorio tests/"
         )
-        
+
+        parser.add_argument(
+            "--no-cicd",
+            action="store_true",
+            help="No generar archivos de CI/CD (.github/workflows/)"
+        )
+
         parser.add_argument(
             "--hash-algo",
             choices=["bcrypt", "argon2"],
             default="argon2",
             help="Algoritmo de hash de passwords (default: argon2)"
         )
-        
+
         return parser
-    
+
     def run(self, args: list[str] | None = None) -> int:
         """
         Template Method (GoF): Flujo fijo del CLI.
@@ -106,19 +111,19 @@ class CLI:
             Exit code (0 = success, 1 = error, 130 = cancelled).
         """
         parsed = self._parser.parse_args(args)
-        
+
         try:
             self._show_header()
-            
+
             # Interactive configuration (always, but uses CLI args as defaults)
             parsed = self._get_interactive_config(parsed)
-            
+
             # Validate after getting all config
             self._validate(parsed)
-            
+
             # Confirm (with reconfiguration option)
             parsed = self._confirm_creation(parsed)
-            
+
             self._create_project(parsed)
             self._show_success(parsed)
             return 0
@@ -132,7 +137,7 @@ class CLI:
             console.print(f"\n[red]✗ Error inesperado:[/red] {exc}")
             console.print_exception()
             return 1
-    
+
     def _show_header(self) -> None:
         """
         Rich UI: Header con panel.
@@ -146,7 +151,7 @@ class CLI:
             box=box.DOUBLE
         ))
         console.print()
-    
+
     def _validate(self, args: argparse.Namespace) -> None:
         """
         Delega validación a cadena de validadores.
@@ -158,11 +163,11 @@ class CLI:
             ValidationError: Si alguna validación falla.
         """
         target_path = args.output_dir / args.project_name
-        
+
         # Solo validar si no se quiere sobrescribir
         if not args.overwrite:
             self._validator_chain.validate(args.project_name, target_path)
-    
+
     def _get_interactive_config(self, args: argparse.Namespace) -> argparse.Namespace:
         """
         Prompts user for all configuration options interactively.
@@ -175,14 +180,14 @@ class CLI:
             Updated namespace with user's choices
         """
         console.print("[bold cyan]📋 Configuración del proyecto[/bold cyan]\n")
-        
+
         # Project name (if not provided via CLI)
         if not args.project_name:
             args.project_name = Prompt.ask(
                 "  [cyan]Nombre del proyecto[/cyan]",
                 default="my-api"
             )
-        
+
         # Output directory (always prompt unless explicitly set via CLI)
         if args.output_dir == Path.cwd():  # Default value, not explicitly set
             output_dir_str = Prompt.ask(
@@ -190,31 +195,38 @@ class CLI:
                 default=str(Path.cwd())
             )
             args.output_dir = Path(output_dir_str).expanduser().resolve()
-        
+
         # Docker
         include_docker = Confirm.ask(
             "  [cyan]¿Incluir Docker y docker-compose?[/cyan]",
             default=not args.no_docker
         )
         args.no_docker = not include_docker
-        
+
         # Tests
         include_tests = Confirm.ask(
             "  [cyan]¿Incluir directorio de tests?[/cyan]",
             default=not args.no_tests
         )
         args.no_tests = not include_tests
-        
+
+        # CI/CD
+        include_cicd = Confirm.ask(
+            "  [cyan]¿Incluir GitHub Actions CI/CD?[/cyan]",
+            default=not args.no_cicd
+        )
+        args.no_cicd = not include_cicd
+
         # Hash algorithm
         args.hash_algo = Prompt.ask(
             "  [cyan]Algoritmo de hash para passwords[/cyan]",
             choices=["argon2", "bcrypt"],
             default=args.hash_algo
         )
-        
+
         console.print()
         return args
-    
+
     def _confirm_creation(self, args: argparse.Namespace) -> argparse.Namespace:
         """
         Rich UI: Muestra resumen y permite reconfigurar.
@@ -239,21 +251,22 @@ class CLI:
             )
             table.add_column("Opción", style="cyan bold", width=20)
             table.add_column("Valor", style="green")
-            
+
             table.add_row("📛 Nombre", args.project_name)
             table.add_row("📁 Directorio", str(args.output_dir / args.project_name))
             table.add_row("🐳 Docker", "❌ No" if args.no_docker else "✅ Sí")
             table.add_row("🧪 Tests", "❌ No" if args.no_tests else "✅ Sí")
+            table.add_row("🔄 CI/CD", "❌ No" if args.no_cicd else "✅ Sí")
             table.add_row("🔐 Hash", f"✅ {args.hash_algo.upper()}")
-            
+
             console.print(table)
             console.print()
-            
+
             # Confirmar
             if Confirm.ask("¿Crear proyecto con esta configuración?", default=True):
                 console.print()
                 return args
-            
+
             # Si rechaza, preguntar si quiere reconfigurar
             console.print()
             if Confirm.ask(
@@ -265,7 +278,7 @@ class CLI:
                 args = self._get_interactive_config(args)
             else:
                 raise KeyboardInterrupt()
-    
+
     def _create_project(self, args: argparse.Namespace) -> None:
         """
         Delega creación a ProjectCreator con Rich progress.
@@ -274,18 +287,19 @@ class CLI:
             args: Argumentos parseados.
         """
         target_path = args.output_dir / args.project_name
-        
+
         # Preparar opciones
         options = {
             "include_docker": not args.no_docker,
             "include_tests": not args.no_tests,
+            "include_cicd": not args.no_cicd,
             "hash_algo": args.hash_algo,
             "overwrite": args.overwrite,
         }
-        
+
         # Crear instancia de ProjectCreator
         creator = ProjectCreator(args.project_name, target_path, options)
-        
+
         # Mostrar progreso con Rich
         with Progress(
             SpinnerColumn(),
@@ -300,7 +314,7 @@ class CLI:
                 total=100
             )
             creator.create(progress, task_id)
-    
+
     def _show_success(self, args: argparse.Namespace) -> None:
         """
         Rich UI: Árbol de estructura + comandos siguientes.
@@ -310,39 +324,39 @@ class CLI:
         """
         console.print()
         console.print("[bold green]✓ ¡Proyecto creado exitosamente![/bold green]\n")
-        
+
         # Árbol de estructura
         tree = Tree(
             f"📁 [bold cyan]{args.project_name}[/bold cyan]",
             guide_style="bright_blue"
         )
-        
+
         app_node = tree.add("📁 [bold]app[/bold] - Código de la aplicación")
         app_node.add("📄 main.py - Entry point FastAPI")
-        
+
         api_node = app_node.add("📁 api - Capa de presentación (HTTP)")
         api_node.add("📁 v1/endpoints - CRUD endpoints (users, products, orders)")
-        
+
         app_node.add("📁 core - Config, security, events")
         app_node.add("📁 services - Lógica de negocio (Service Layer)")
         app_node.add("📁 repositories - Acceso a datos (Repository pattern)")
         app_node.add("📁 models - Modelos SQLAlchemy")
         app_node.add("📁 schemas - Schemas Pydantic")
-        
+
         if not args.no_tests:
             tree.add("📁 [bold]tests[/bold] - Tests unitarios e integración")
-        
+
         if not args.no_docker:
             tree.add("🐳 docker-compose.yml - Postgres + Redis + API")
             tree.add("🐳 Dockerfile - Imagen de la app")
-        
+
         tree.add("📄 pyproject.toml - Deps + ruff config")
         tree.add("📄 .pre-commit-config.yaml - Git hooks")
         tree.add("📄 alembic.ini - Configuración migrations")
-        
+
         console.print(tree)
         console.print()
-        
+
         # Panel con comandos siguientes
         console.print(Panel(
             f"[bold white]Siguientes pasos:[/bold white]\n\n"

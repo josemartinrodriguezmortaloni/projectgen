@@ -108,22 +108,29 @@ python -m template-proyects my-api --no-docker
 # Without tests
 python -m template-proyects my-api --no-tests
 
+# Without CI/CD workflows
+python -m template-proyects my-api --no-cicd
+
 # Specify output directory
 python -m template-proyects my-api --output-dir ~/projects
 
 # Overwrite existing project
 python -m template-proyects my-api --overwrite
+
+# Interactive mode (prompts for all options)
+python -m template-proyects
 ```
 
 ### Available Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `project_name` | Project name (required) | - |
+| `project_name` | Project name (optional in interactive mode) | - |
 | `--output-dir` | Directory where to create the project | Current directory |
 | `--hash-algo` | Hash algorithm (`bcrypt` or `argon2`) | `argon2` |
 | `--no-docker` | Don't generate Dockerfile or docker-compose | `False` |
 | `--no-tests` | Don't generate tests/ directory | `False` |
+| `--no-cicd` | Don't generate CI/CD files (.github/workflows/) | `False` |
 | `--overwrite` | Overwrite existing project | `False` |
 
 ## 📁 Generated Project Structure
@@ -233,7 +240,66 @@ uvicorn app.main:app --reload
 - **Swagger Documentation**: <http://localhost:8000/docs>
 - **ReDoc Documentation**: <http://localhost:8000/redoc>
 
-### 5. Run Tests
+### 5. CI/CD with GitHub Actions
+
+Generated projects include GitHub Actions workflows for continuous integration and deployment:
+
+#### Included Workflows
+
+**`.github/workflows/ci.yml`** - Runs on every push/PR:
+- Lints code with Ruff
+- Runs tests on Python 3.12 and 3.13
+- Builds the package with uv
+
+**`.github/workflows/release.yml`** - Publishes to PyPI:
+- Triggers when you create a GitHub Release
+- Uses trusted publishing (no tokens needed)
+- Automatically builds and publishes to PyPI
+
+**`.github/workflows/test-pypi.yml`** - Publishes to TestPyPI:
+- Triggers on tags matching `test-v*`
+- Useful for testing the release process
+
+#### Setting Up PyPI Trusted Publishing
+
+1. Go to your PyPI project settings: `https://pypi.org/manage/project/YOUR-PROJECT/settings/`
+2. Navigate to "Publishing" → "Add a new pending publisher"
+3. Fill in:
+   - **PyPI Project Name**: Your project name
+   - **Owner**: Your GitHub username
+   - **Repository**: Your repository name
+   - **Workflow name**: `release.yml`
+   - **Environment name**: `pypi`
+
+#### Creating a Release
+
+```bash
+# Update version in pyproject.toml
+# Commit and push changes
+git add pyproject.toml
+git commit -m "chore: bump version to 1.1.0"
+git push origin main
+
+# Create a GitHub Release (triggers automatic PyPI publish)
+# Go to: https://github.com/YOUR-USERNAME/YOUR-REPO/releases/new
+# - Tag: v1.1.0
+# - Title: v1.1.0
+# - Description: Your release notes
+```
+
+#### Testing Release on TestPyPI
+
+```bash
+# Create a test tag
+git tag test-v1.0.0
+git push origin test-v1.0.0
+
+# This triggers test-pypi.yml workflow
+# Install from TestPyPI to verify
+pip install --index-url https://test.pypi.org/simple/ your-package
+```
+
+### 6. Run Tests
 
 ```bash
 # All tests

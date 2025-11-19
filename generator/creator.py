@@ -9,8 +9,8 @@ from typing import Any
 
 from rich.progress import Progress
 
-from generator.templates.base import FileTemplate
 from generator.templates.app_files import get_app_templates
+from generator.templates.base import FileTemplate
 from generator.templates.config_files import get_config_templates
 from generator.templates.test_files import get_test_templates
 
@@ -26,7 +26,7 @@ class ProjectCreator:
         creator = ProjectCreator("mi-api", Path("mi-api"), options)
         creator.create(progress, task_id)
     """
-    
+
     def __init__(
         self,
         project_name: str,
@@ -49,7 +49,7 @@ class ProjectCreator:
         self._target_path = target_path
         self._options = options
         self._templates: list[FileTemplate] = []
-    
+
     def create(self, progress: Progress, task_id: int) -> None:
         """
         Template Method (GoF): Define pasos de creación.
@@ -68,7 +68,7 @@ class ProjectCreator:
         """
         total_steps = 6
         current_step = 0
-        
+
         # Paso 1: Recolectar templates
         progress.update(
             task_id,
@@ -77,7 +77,7 @@ class ProjectCreator:
         )
         self._collect_templates()
         current_step += 1
-        
+
         # Paso 2: Crear directorios
         progress.update(
             task_id,
@@ -86,7 +86,7 @@ class ProjectCreator:
         )
         self._create_directories()
         current_step += 1
-        
+
         # Paso 3: Crear archivos
         progress.update(
             task_id,
@@ -95,7 +95,7 @@ class ProjectCreator:
         )
         self._create_files()
         current_step += 1
-        
+
         # Paso 4: Inicializar git
         progress.update(
             task_id,
@@ -104,7 +104,7 @@ class ProjectCreator:
         )
         self._initialize_git()
         current_step += 1
-        
+
         # Paso 5: Instalar pre-commit
         progress.update(
             task_id,
@@ -113,14 +113,14 @@ class ProjectCreator:
         )
         self._install_pre_commit()
         current_step += 1
-        
+
         # Paso 6: Finalizar
         progress.update(
             task_id,
             description="[green]✓ Proyecto creado",
             completed=100
         )
-    
+
     def _collect_templates(self) -> None:
         """
         Information Expert (GRASP): Sabe qué templates necesita.
@@ -133,16 +133,17 @@ class ProjectCreator:
             project_name=self._project_name,
             hash_algo=self._options["hash_algo"]
         ))
-        
+
         self._templates.extend(get_config_templates(
             project_name=self._project_name,
-            include_docker=self._options["include_docker"]
+            include_docker=self._options["include_docker"],
+            include_cicd=self._options.get("include_cicd", True)
         ))
-        
+
         # Condicional: tests
         if self._options["include_tests"]:
             self._templates.extend(get_test_templates())
-    
+
     def _create_directories(self) -> None:
         """
         Pure Fabrication (GRASP): Lógica técnica, no de dominio.
@@ -153,7 +154,7 @@ class ProjectCreator:
         for directory in sorted(dirs):
             full_path = self._target_path / directory
             full_path.mkdir(parents=True, exist_ok=True)
-    
+
     def _extract_directories(self) -> set[Path]:
         """
         Helper: Extrae directorios únicos de templates.
@@ -162,18 +163,18 @@ class ProjectCreator:
             Set de rutas de directorios necesarios.
         """
         dirs: set[Path] = {Path(".")}  # Raíz siempre
-        
+
         for template in self._templates:
             path = Path(template.relative_path)
             current = path.parent
-            
+
             # Agregar directorio y todos sus padres
             while current != Path("."):
                 dirs.add(current)
                 current = current.parent
-        
+
         return dirs
-    
+
     def _create_files(self) -> None:
         """
         Protected Variations (GRASP): Protege contra cambios en I/O.
@@ -182,18 +183,18 @@ class ProjectCreator:
         """
         for template in self._templates:
             file_path = self._target_path / template.relative_path
-            
+
             # Skip si ya existe y no se quiere sobrescribir
             if file_path.exists() and not self._options["overwrite"]:
                 continue
-            
+
             # Asegurar que el directorio padre existe
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Obtener contenido y escribir archivo
             content = template.get_content()
             file_path.write_text(content, encoding="utf-8")
-    
+
     def _initialize_git(self) -> None:
         """
         Inicializa repositorio git si no existe.
@@ -203,7 +204,7 @@ class ProjectCreator:
         git_dir = self._target_path / ".git"
         if git_dir.exists():
             return  # Ya está inicializado
-        
+
         try:
             # git init
             subprocess.run(
@@ -213,7 +214,7 @@ class ProjectCreator:
                 capture_output=True,
                 timeout=10
             )
-            
+
             # git add .gitignore
             subprocess.run(
                 ["git", "add", ".gitignore"],
@@ -225,7 +226,7 @@ class ProjectCreator:
         except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
             # Git es opcional, no bloquea si falla
             pass
-    
+
     def _install_pre_commit(self) -> None:
         """
         Instala hooks de pre-commit si está disponible.

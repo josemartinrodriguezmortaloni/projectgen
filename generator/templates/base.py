@@ -3,9 +3,9 @@ Pure Fabrication (GRASP): Clases artificiales para representar templates.
 Single Responsibility (SOLID): Solo contiene estructuras de datos y helpers.
 """
 
-from dataclasses import dataclass
-from typing import Callable
 import textwrap
+from collections.abc import Callable
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,7 @@ class FileTemplate:
     """
     relative_path: str
     content: str | Callable[[], str]
-    
+
     def get_content(self) -> str:
         """
         Polymorphism (GRASP): Maneja ambos tipos de content uniformemente.

@@ -18,22 +18,22 @@ def get_test_templates() -> list[FileTemplate]:
         FileTemplate("tests/__init__.py", dedent("""
             # Paquete de tests.
         """)),
-        
+
         _create_conftest_template(),
-        
+
         # tests/unit/
         FileTemplate("tests/unit/__init__.py", dedent("""
             # Tests unitarios.
         """)),
-        
+
         _create_unit_test_services_template(),
         _create_unit_test_repositories_template(),
-        
+
         # tests/integration/
         FileTemplate("tests/integration/__init__.py", dedent("""
             # Tests de integración.
         """)),
-        
+
         _create_integration_test_users_endpoint_template(),
     ]
 

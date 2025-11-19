@@ -23,106 +23,106 @@ def get_app_templates(project_name: str, hash_algo: str) -> list[FileTemplate]:
         FileTemplate("app/__init__.py", dedent("""
             # Paquete principal de la aplicación FastAPI.
         """)),
-        
+
         _create_main_template(),
-        
+
         # app/core/
         FileTemplate("app/core/__init__.py", dedent("""
             # Núcleo de la aplicación: configuración, seguridad, eventos, excepciones.
         """)),
-        
+
         _create_config_template(project_name),
         _create_security_template(hash_algo),
         _create_events_template(),
         _create_exceptions_template(),
-        
+
         # app/db/
         FileTemplate("app/db/__init__.py", dedent("""
             # Capa de acceso a base de datos.
         """)),
-        
+
         _create_db_session_template(),
         _create_db_base_template(),
-        
+
         # app/models/
         FileTemplate("app/models/__init__.py", dedent("""
             # Modelos SQLAlchemy (representan tablas de BD).
         """)),
-        
+
         _create_user_model_template(),
         _create_product_model_template(),
         _create_order_model_template(),
-        
+
         # app/schemas/
         FileTemplate("app/schemas/__init__.py", dedent("""
             # Schemas Pydantic v2 (validan y serializan datos HTTP).
         """)),
-        
+
         _create_user_schema_template(),
         _create_product_schema_template(),
         _create_order_schema_template(),
-        
+
         # app/repositories/
         FileTemplate("app/repositories/__init__.py", dedent("""
             # Patrón Repository: abstrae acceso a datos.
             # Solo queries, sin lógica de negocio.
         """)),
-        
+
         _create_base_repository_template(),
         _create_user_repository_template(),
         _create_product_repository_template(),
         _create_order_repository_template(),
-        
+
         # app/services/
         FileTemplate("app/services/__init__.py", dedent("""
             # Service Layer: lógica de negocio.
             # Valida, coordina repositorios, dispara eventos.
         """)),
-        
+
         _create_cache_service_template(),
         _create_user_service_template(),
         _create_product_service_template(),
         _create_order_service_template(),
-        
+
         # app/factories/
         FileTemplate("app/factories/__init__.py", dedent("""
             # Factory Pattern: creación de servicios con dependencias.
         """)),
-        
+
         _create_service_factory_template(),
-        
+
         # app/utils/
         FileTemplate("app/utils/__init__.py", dedent("""
             # Utilidades generales reutilizables.
         """)),
-        
+
         FileTemplate("app/utils/validators.py", dedent("""
             # Validadores de negocio reutilizables.
         """)),
-        
+
         FileTemplate("app/utils/helpers.py", dedent("""
             # Helper functions reutilizables.
         """)),
-        
+
         # app/api/
         FileTemplate("app/api/__init__.py", dedent("""
             # Capa de presentación HTTP (endpoints).
         """)),
-        
+
         _create_dependencies_template(),
-        
+
         # app/api/v1/
         FileTemplate("app/api/v1/__init__.py", dedent("""
             # API versión 1.
         """)),
-        
+
         _create_api_router_template(),
-        
+
         # app/api/v1/endpoints/
         FileTemplate("app/api/v1/endpoints/__init__.py", dedent("""
             # Endpoints CRUD agrupados por recurso.
         """)),
-        
+
         _create_users_endpoint_template(),
         _create_products_endpoint_template(),
         _create_orders_endpoint_template(),
@@ -253,7 +253,7 @@ def _create_config_template(project_name: str) -> FileTemplate:
 def _create_security_template(hash_algo: str) -> FileTemplate:
     """Strategy pattern para hash de passwords + JWT."""
     default_hasher = "Argon2Hasher" if hash_algo == "argon2" else "BcryptHasher"
-    
+
     return FileTemplate("app/core/security.py", dedent(f"""
         from abc import ABC, abstractmethod
         from datetime import datetime, timedelta, timezone

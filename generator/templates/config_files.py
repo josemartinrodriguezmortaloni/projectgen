@@ -8,15 +8,17 @@ from generator.templates.base import FileTemplate, dedent
 
 def get_config_templates(
     project_name: str,
-    include_docker: bool = True
+    include_docker: bool = True,
+    include_cicd: bool = True
 ) -> list[FileTemplate]:
     """
     Factory Method (GoF): Crea conjunto de templates de configuración.
-    
+
     Args:
         project_name: Nombre del proyecto.
         include_docker: Si incluir Dockerfile y docker-compose.yml.
-        
+        include_cicd: Si incluir archivos de CI/CD (.github/workflows/).
+
     Returns:
         Lista de FileTemplate con archivos de configuración.
     """
@@ -32,21 +34,29 @@ def get_config_templates(
         FileTemplate("alembic/versions/.gitkeep", "# Mantiene directorio versions en git\n"),
         _create_readme_template(project_name),
     ]
-    
+
     if include_docker:
-        templates.extend([
-            _create_dockerfile_template(),
-            _create_docker_compose_template(),
-        ])
-    
+        templates.extend(
+            [
+                _create_dockerfile_template(),
+                _create_docker_compose_template(),
+            ]
+        )
+
+    if include_cicd:
+        templates.extend(get_cicd_templates(project_name))
+
     return templates
 
 
 # ==================== .env.example ====================
 
+
 def _create_env_example_template() -> FileTemplate:
     """Variables de entorno documentadas."""
-    return FileTemplate(".env.example", dedent("""
+    return FileTemplate(
+        ".env.example",
+        dedent("""
         # Ejemplo de configuración para entorno local
         # Copia este archivo a .env y ajusta los valores
         
@@ -70,14 +80,18 @@ def _create_env_example_template() -> FileTemplate:
         
         # CORS (lista separada por comas)
         CORS_ORIGINS=["http://localhost:3000","http://localhost:8080"]
-    """))
+    """),
+    )
 
 
 # ==================== .gitignore ====================
 
+
 def _create_gitignore_template() -> FileTemplate:
     """Gitignore completo para Python."""
-    return FileTemplate(".gitignore", dedent("""
+    return FileTemplate(
+        ".gitignore",
+        dedent("""
         # Python
         __pycache__/
         *.py[cod]
@@ -131,14 +145,18 @@ def _create_gitignore_template() -> FileTemplate:
         *.db
         *.sqlite
         *.sqlite3
-    """))
+    """),
+    )
 
 
 # ==================== pyproject.toml ====================
 
+
 def _create_pyproject_toml_template(project_name: str) -> FileTemplate:
     """Configuración completa con uv y ruff."""
-    return FileTemplate("pyproject.toml", dedent(f"""
+    return FileTemplate(
+        "pyproject.toml",
+        dedent(f"""
         [project]
         name = "{project_name}"
         version = "0.1.0"
@@ -204,7 +222,7 @@ def _create_pyproject_toml_template(project_name: str) -> FileTemplate:
         line-ending = "auto"
         
         [tool.ruff.lint.isort]
-        known-first-party = ["{project_name.replace('-', '_')}"]
+        known-first-party = ["{project_name.replace("-", "_")}"]
         
         # Configuración de Pytest
         [tool.pytest.ini_options]
@@ -231,14 +249,18 @@ def _create_pyproject_toml_template(project_name: str) -> FileTemplate:
             "if __name__ == .__main__.:",
             "if TYPE_CHECKING:",
         ]
-    """))
+    """),
+    )
 
 
 # ==================== requirements.txt ====================
 
+
 def _create_requirements_txt_template() -> FileTemplate:
     """Requirements.txt para compatibilidad."""
-    return FileTemplate("requirements.txt", dedent("""
+    return FileTemplate(
+        "requirements.txt",
+        dedent("""
         # Generado desde pyproject.toml para compatibilidad
         # Usar: uv sync (recomendado) o pip install -r requirements.txt
         
@@ -254,14 +276,18 @@ def _create_requirements_txt_template() -> FileTemplate:
         pyjwt>=2.10.0
         redis>=5.2.0
         python-dotenv>=1.0.0
-    """))
+    """),
+    )
 
 
 # ==================== .pre-commit-config.yaml ====================
 
+
 def _create_pre_commit_config_template() -> FileTemplate:
     """Configuración de pre-commit con ruff."""
-    return FileTemplate(".pre-commit-config.yaml", dedent("""
+    return FileTemplate(
+        ".pre-commit-config.yaml",
+        dedent("""
         # Pre-commit hooks para mantener calidad de código
         # Instalación: pre-commit install
         # Ejecución manual: pre-commit run --all-files
@@ -285,14 +311,18 @@ def _create_pre_commit_config_template() -> FileTemplate:
                 args: [--fix]
               # Formatter
               - id: ruff-format
-    """))
+    """),
+    )
 
 
 # ==================== alembic.ini ====================
 
+
 def _create_alembic_ini_template() -> FileTemplate:
     """Configuración base de Alembic."""
-    return FileTemplate("alembic.ini", dedent("""
+    return FileTemplate(
+        "alembic.ini",
+        dedent("""
         # Configuración de Alembic para migraciones de base de datos
         
         [alembic]
@@ -350,14 +380,18 @@ def _create_alembic_ini_template() -> FileTemplate:
         [formatter_generic]
         format = %(levelname)-5.5s [%(name)s] %(message)s
         datefmt = %H:%M:%S
-    """))
+    """),
+    )
 
 
 # ==================== alembic/env.py ====================
 
+
 def _create_alembic_env_template() -> FileTemplate:
     """Configuración de Alembic con soporte async."""
-    return FileTemplate("alembic/env.py", dedent("""
+    return FileTemplate(
+        "alembic/env.py",
+        dedent("""
         import asyncio
         from logging.config import fileConfig
 
@@ -444,14 +478,18 @@ def _create_alembic_env_template() -> FileTemplate:
             run_migrations_offline()
         else:
             run_migrations_online()
-    """))
+    """),
+    )
 
 
 # ==================== alembic/script.py.mako ====================
 
+
 def _create_alembic_script_mako_template() -> FileTemplate:
     """Template Mako para archivos de migración."""
-    return FileTemplate("alembic/script.py.mako", dedent('''
+    return FileTemplate(
+        "alembic/script.py.mako",
+        dedent('''
         """${message}
 
         Revision ID: ${up_revision}
@@ -478,14 +516,18 @@ def _create_alembic_script_mako_template() -> FileTemplate:
 
         def downgrade() -> None:
             ${downgrades if downgrades else "pass"}
-    '''))
+    '''),
+    )
 
 
 # ==================== Dockerfile ====================
 
+
 def _create_dockerfile_template() -> FileTemplate:
     """Dockerfile multi-stage optimizado."""
-    return FileTemplate("Dockerfile", dedent("""
+    return FileTemplate(
+        "Dockerfile",
+        dedent("""
         # Multi-stage build para optimizar tamaño de imagen
         
         # Stage 1: Builder
@@ -537,15 +579,18 @@ def _create_dockerfile_template() -> FileTemplate:
         
         # Comando por defecto
         CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    """))
+    """),
+    )
 
 
 # ==================== docker-compose.yml ====================
 
+
 def _create_docker_compose_template() -> FileTemplate:
     """Docker Compose con API, Postgres y Redis."""
-    return FileTemplate("docker-compose.yml", dedent("""
-        version: "3.9"
+    return FileTemplate(
+        "docker-compose.yml",
+        dedent("""
         
         services:
           api:
@@ -614,14 +659,18 @@ def _create_docker_compose_template() -> FileTemplate:
         networks:
           app-network:
             driver: bridge
-    """))
+    """),
+    )
 
 
 # ==================== README.md ====================
 
+
 def _create_readme_template(project_name: str) -> FileTemplate:
     """README completo con documentación."""
-    return FileTemplate("README.md", dedent(f"""
+    return FileTemplate(
+        "README.md",
+        dedent(f"""
         # {project_name}
         
         API FastAPI con arquitectura limpia aplicando principios SOLID y patrones de diseño GoF/GRASP.
@@ -860,5 +909,203 @@ def _create_readme_template(project_name: str) -> FileTemplate:
         - SQLAlchemy por el poderoso ORM
         - Alembic por las migraciones
         - Ruff por el linting ultrarrápido
-    """))
+    """),
+    )
 
+
+# ==================== GitHub Actions CI/CD ====================
+
+
+def _create_github_ci_workflow_template(project_name: str) -> FileTemplate:
+    """Workflow de CI con uv."""
+    return FileTemplate(
+        ".github/workflows/ci.yml",
+        dedent("""
+            name: CI
+            
+            on:
+              push:
+                branches: [ main, develop ]
+              pull_request:
+                branches: [ main, develop ]
+            
+            jobs:
+              lint:
+                name: Lint Code
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+                  
+                  - name: Install uv
+                    uses: astral-sh/setup-uv@v7
+                    with:
+                      enable-cache: true
+                  
+                  - name: Set up Python
+                    run: uv python install 3.12
+                  
+                  - name: Install dependencies
+                    run: uv sync --all-extras
+                  
+                  - name: Run Ruff (Linter)
+                    run: uv run ruff check .
+                  
+                  - name: Run Ruff (Formatter check)
+                    run: uv run ruff format --check .
+            
+              test:
+                name: Test on Python ${{ matrix.python-version }}
+                runs-on: ubuntu-latest
+                strategy:
+                  matrix:
+                    python-version: ["3.12", "3.13"]
+                
+                steps:
+                  - uses: actions/checkout@v4
+                  
+                  - name: Install uv
+                    uses: astral-sh/setup-uv@v7
+                    with:
+                      enable-cache: true
+                      cache-dependency-glob: "uv.lock"
+                  
+                  - name: Set up Python ${{ matrix.python-version }}
+                    run: uv python install ${{ matrix.python-version }}
+                  
+                  - name: Install dependencies
+                    run: uv sync --all-extras
+                  
+                  - name: Run tests
+                    run: uv run pytest -v --tb=short
+            
+              build:
+                name: Build Package
+                runs-on: ubuntu-latest
+                needs: [lint, test]
+                
+                steps:
+                  - uses: actions/checkout@v4
+                  
+                  - name: Install uv
+                    uses: astral-sh/setup-uv@v7
+                    with:
+                      enable-cache: true
+                  
+                  - name: Set up Python
+                    run: uv python install 3.12
+                  
+                  - name: Build package
+                    run: uv build
+                  
+                  - name: Upload artifacts
+                    uses: actions/upload-artifact@v4
+                    with:
+                      name: dist
+                      path: dist/
+        """),
+    )
+
+
+def _create_github_release_workflow_template(project_name: str) -> FileTemplate:
+    """Workflow de publicación a PyPI."""
+    return FileTemplate(
+        ".github/workflows/release.yml",
+        dedent(f"""
+            name: Publish to PyPI
+            
+            on:
+              release:
+                types: [published]
+            
+            jobs:
+              deploy:
+                name: Publish to PyPI
+                runs-on: ubuntu-latest
+                environment:
+                  name: pypi
+                  url: https://pypi.org/p/{project_name}
+                permissions:
+                  id-token: write  # IMPORTANT: mandatory for trusted publishing
+                
+                steps:
+                  - uses: actions/checkout@v4
+                  
+                  - name: Install uv
+                    uses: astral-sh/setup-uv@v7
+                    with:
+                      enable-cache: true
+                  
+                  - name: Set up Python
+                    run: uv python install 3.12
+                  
+                  - name: Build package
+                    run: uv build
+                  
+                  - name: Publish to PyPI
+                    uses: pypa/gh-action-pypi-publish@release/v1
+                    with:
+                      verbose: true
+        """),
+    )
+
+
+def _create_github_testpypi_workflow_template(project_name: str) -> FileTemplate:
+    """Workflow de publicación a TestPyPI."""
+    return FileTemplate(
+        ".github/workflows/test-pypi.yml",
+        dedent(f"""
+            name: Publish to TestPyPI
+            
+            on:
+              push:
+                tags:
+                  - 'test-v*'
+            
+            jobs:
+              deploy:
+                name: Publish to TestPyPI
+                runs-on: ubuntu-latest
+                environment:
+                  name: testpypi
+                  url: https://test.pypi.org/p/{project_name}
+                permissions:
+                  id-token: write
+                
+                steps:
+                  - uses: actions/checkout@v4
+                  
+                  - name: Install uv
+                    uses: astral-sh/setup-uv@v7
+                    with:
+                      enable-cache: true
+                  
+                  - name: Set up Python
+                    run: uv python install 3.12
+                  
+                  - name: Build package
+                    run: uv build
+                  
+                  - name: Publish to TestPyPI
+                    uses: pypa/gh-action-pypi-publish@release/v1
+                    with:
+                      repository-url: https://test.pypi.org/legacy/
+                      verbose: true
+        """),
+    )
+
+
+def get_cicd_templates(project_name: str) -> list[FileTemplate]:
+    """
+    Factory Method: Crea templates de CI/CD para GitHub Actions.
+    
+    Args:
+        project_name: Nombre del proyecto para URLs de PyPI.
+    
+    Returns:
+        Lista de FileTemplate con workflows de GitHub Actions.
+    """
+    return [
+        _create_github_ci_workflow_template(project_name),
+        _create_github_release_workflow_template(project_name),
+        _create_github_testpypi_workflow_template(project_name),
+    ]
