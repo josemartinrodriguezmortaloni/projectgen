@@ -173,6 +173,9 @@ def _create_pyproject_toml_template(project_name: str) -> FileTemplate:
         requires = ["hatchling"]
         build-backend = "hatchling.build"
         
+        [tool.hatch.build.targets.wheel]
+        packages = ["app"]
+        
         # Configuración de Ruff (linter + formatter)
         [tool.ruff]
         line-length = 100

@@ -10,7 +10,7 @@ from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
-from rich.prompt import Confirm
+from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from rich.tree import Tree
 
@@ -51,12 +51,14 @@ class CLI:
         parser = argparse.ArgumentParser(
             description="🚀 Generador de proyectos FastAPI con arquitectura limpia",
             formatter_class=argparse.RawDescriptionHelpFormatter,
-            epilog="Ejemplo: python -m template-proyects mi-api --hash-algo argon2"
+            epilog="Ejemplo: python -m template-proyects mi-api --hash-algo argon2\n"
+                   "         python -m template-proyects  # Modo interactivo completo"
         )
         
         parser.add_argument(
             "project_name",
-            help="Nombre del proyecto (ej: mi-api, backend-service)"
+            nargs="?",  # Make optional
+            help="Nombre del proyecto (ej: mi-api, backend-service). Si no se provee, se preguntará interactivamente"
         )
         
         parser.add_argument(
@@ -107,8 +109,16 @@ class CLI:
         
         try:
             self._show_header()
+            
+            # Interactive configuration (always, but uses CLI args as defaults)
+            parsed = self._get_interactive_config(parsed)
+            
+            # Validate after getting all config
             self._validate(parsed)
-            self._confirm_creation(parsed)
+            
+            # Confirm (with reconfiguration option)
+            parsed = self._confirm_creation(parsed)
+            
             self._create_project(parsed)
             self._show_success(parsed)
             return 0
@@ -153,39 +163,108 @@ class CLI:
         if not args.overwrite:
             self._validator_chain.validate(args.project_name, target_path)
     
-    def _confirm_creation(self, args: argparse.Namespace) -> None:
+    def _get_interactive_config(self, args: argparse.Namespace) -> argparse.Namespace:
         """
-        Rich UI: Muestra resumen y confirma con usuario.
+        Prompts user for all configuration options interactively.
+        Pattern: Template Method - defines fixed sequence of prompts
+        
+        Args:
+            args: Initial arguments (may have some values pre-filled from CLI)
+            
+        Returns:
+            Updated namespace with user's choices
+        """
+        console.print("[bold cyan]📋 Configuración del proyecto[/bold cyan]\n")
+        
+        # Project name (if not provided via CLI)
+        if not args.project_name:
+            args.project_name = Prompt.ask(
+                "  [cyan]Nombre del proyecto[/cyan]",
+                default="my-api"
+            )
+        
+        # Output directory (always prompt unless explicitly set via CLI)
+        if args.output_dir == Path.cwd():  # Default value, not explicitly set
+            output_dir_str = Prompt.ask(
+                "  [cyan]Directorio donde crear el proyecto[/cyan]",
+                default=str(Path.cwd())
+            )
+            args.output_dir = Path(output_dir_str).expanduser().resolve()
+        
+        # Docker
+        include_docker = Confirm.ask(
+            "  [cyan]¿Incluir Docker y docker-compose?[/cyan]",
+            default=not args.no_docker
+        )
+        args.no_docker = not include_docker
+        
+        # Tests
+        include_tests = Confirm.ask(
+            "  [cyan]¿Incluir directorio de tests?[/cyan]",
+            default=not args.no_tests
+        )
+        args.no_tests = not include_tests
+        
+        # Hash algorithm
+        args.hash_algo = Prompt.ask(
+            "  [cyan]Algoritmo de hash para passwords[/cyan]",
+            choices=["argon2", "bcrypt"],
+            default=args.hash_algo
+        )
+        
+        console.print()
+        return args
+    
+    def _confirm_creation(self, args: argparse.Namespace) -> argparse.Namespace:
+        """
+        Rich UI: Muestra resumen y permite reconfigurar.
+        Pattern: Template Method with loop for reconfiguration
         
         Args:
             args: Argumentos parseados.
             
+        Returns:
+            Confirmed (possibly modified) arguments.
+            
         Raises:
-            KeyboardInterrupt: Si usuario cancela.
+            KeyboardInterrupt: Si usuario cancela definitivamente.
         """
-        # Tabla de configuración
-        table = Table(
-            title="⚙️  Configuración del proyecto",
-            show_header=False,
-            box=box.ROUNDED,
-            border_style="blue"
-        )
-        table.add_column("Opción", style="cyan bold", width=20)
-        table.add_column("Valor", style="green")
-        
-        table.add_row("📛 Nombre", args.project_name)
-        table.add_row("📁 Directorio", str(args.output_dir / args.project_name))
-        table.add_row("🐳 Docker", "❌ No" if args.no_docker else "✅ Sí")
-        table.add_row("🧪 Tests", "❌ No" if args.no_tests else "✅ Sí")
-        table.add_row("🔐 Hash", f"✅ {args.hash_algo.upper()}")
-        
-        console.print(table)
-        console.print()
-        
-        # Confirmar
-        if not Confirm.ask("¿Crear proyecto con esta configuración?", default=True):
-            raise KeyboardInterrupt()
-        console.print()
+        while True:
+            # Tabla de configuración
+            table = Table(
+                title="⚙️  Configuración del proyecto",
+                show_header=False,
+                box=box.ROUNDED,
+                border_style="blue"
+            )
+            table.add_column("Opción", style="cyan bold", width=20)
+            table.add_column("Valor", style="green")
+            
+            table.add_row("📛 Nombre", args.project_name)
+            table.add_row("📁 Directorio", str(args.output_dir / args.project_name))
+            table.add_row("🐳 Docker", "❌ No" if args.no_docker else "✅ Sí")
+            table.add_row("🧪 Tests", "❌ No" if args.no_tests else "✅ Sí")
+            table.add_row("🔐 Hash", f"✅ {args.hash_algo.upper()}")
+            
+            console.print(table)
+            console.print()
+            
+            # Confirmar
+            if Confirm.ask("¿Crear proyecto con esta configuración?", default=True):
+                console.print()
+                return args
+            
+            # Si rechaza, preguntar si quiere reconfigurar
+            console.print()
+            if Confirm.ask(
+                "[yellow]¿Deseas modificar la configuración?[/yellow]",
+                default=True
+            ):
+                console.print()
+                # Preserve project_name but allow re-prompting for everything
+                args = self._get_interactive_config(args)
+            else:
+                raise KeyboardInterrupt()
     
     def _create_project(self, args: argparse.Namespace) -> None:
         """
