@@ -46,7 +46,7 @@ def get_test_templates() -> list[FileTemplate]:
 
 
 def _create_conftest_template() -> FileTemplate:
-    """Fixtures compartidos para tests async."""
+    """Shared fixtures for async tests."""
     return FileTemplate(
         "tests/conftest.py",
         dedent("""
@@ -140,7 +140,7 @@ def _create_conftest_template() -> FileTemplate:
 
 
 def _create_unit_test_services_template() -> FileTemplate:
-    """Tests unitarios para services con mocks."""
+    """Unit tests for services with mocks."""
     return FileTemplate(
         "tests/unit/test_services.py",
         dedent("""
@@ -313,7 +313,7 @@ def _create_unit_test_services_template() -> FileTemplate:
 
 
 def _create_unit_test_repositories_template() -> FileTemplate:
-    """Tests unitarios para repositories."""
+    """Unit tests for repositories."""
     return FileTemplate(
         "tests/unit/test_repositories.py",
         dedent("""
@@ -427,7 +427,7 @@ def _create_unit_test_repositories_template() -> FileTemplate:
 
 
 def _create_integration_test_users_endpoint_template() -> FileTemplate:
-    """Tests E2E para endpoints de users."""
+    """E2E tests for user endpoints."""
     return FileTemplate(
         "tests/integration/test_users_endpoint.py",
         dedent("""

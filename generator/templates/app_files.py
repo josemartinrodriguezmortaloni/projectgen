@@ -152,7 +152,7 @@ def get_app_templates(project_name: str, hash_algo: str) -> list[FileTemplate]:
 
 
 def _create_main_template() -> FileTemplate:
-    """Entry point de FastAPI con lifespan events."""
+    """FastAPI entry point with lifespan events."""
     return FileTemplate(
         "app/main.py",
         dedent("""
@@ -214,7 +214,7 @@ def _create_main_template() -> FileTemplate:
 
 
 def _create_config_template(project_name: str) -> FileTemplate:
-    """Singleton para configuración con pydantic-settings."""
+    """Singleton for configuration with pydantic-settings."""
     return FileTemplate(
         "app/core/config.py",
         dedent(f"""
@@ -278,7 +278,7 @@ def _create_config_template(project_name: str) -> FileTemplate:
 
 
 def _create_security_template(hash_algo: str) -> FileTemplate:
-    """Strategy pattern para hash de passwords + JWT."""
+    """Strategy pattern for password hashing + JWT."""
     default_hasher = "Argon2Hasher" if hash_algo == "argon2" else "BcryptHasher"
 
     return FileTemplate(
@@ -375,11 +375,11 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
                 expires_delta: timedelta | None = None
             ) -> str:
                 '''
-                Crea JWT access token.
+                Create JWT access token.
 
                 Args:
-                    data: Payload del token (ej: {"sub": "user_id"})
-                    expires_delta: Tiempo de expiración custom
+                    data: Token payload (e.g.: {{"sub": "user_id"}})
+                    expires_delta: Custom expiration time
                 '''
                 to_encode = data.copy()
 
@@ -390,7 +390,7 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
                         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
                     )
 
-                to_encode.update({"exp": expire})
+                to_encode.update({{"exp": expire}})
                 encoded_jwt = jwt.encode(
                     to_encode,
                     settings.SECRET_KEY,
@@ -417,7 +417,7 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
 
 
 def _create_events_template() -> FileTemplate:
-    """Observer pattern para sistema de eventos async."""
+    """Observer pattern for async event system."""
     return FileTemplate(
         "app/core/events.py",
         dedent("""
@@ -464,7 +464,7 @@ def _create_events_template() -> FileTemplate:
                     print(f"Usuario creado: {event.data}")
 
                 event_dispatcher.subscribe(EventType.USER_CREATED, handle_user_created)
-                await event_dispatcher.dispatch(Event(EventType.USER_CREATED, {"id": 1}))
+                await event_dispatcher.dispatch(Event(EventType.USER_CREATED, {{"id": 1}}))
             '''
 
             def __init__(self) -> None:
@@ -547,7 +547,7 @@ def _create_events_template() -> FileTemplate:
 
 
 def _create_exceptions_template() -> FileTemplate:
-    """Custom exceptions del dominio."""
+    """Custom domain exceptions."""
     return FileTemplate(
         "app/core/exceptions.py",
         dedent("""
@@ -614,7 +614,7 @@ def _create_exceptions_template() -> FileTemplate:
 
 
 def _create_db_session_template() -> FileTemplate:
-    """AsyncSession factory para SQLAlchemy 2.0."""
+    """AsyncSession factory for SQLAlchemy 2.0."""
     return FileTemplate(
         "app/db/session.py",
         dedent("""
@@ -670,7 +670,7 @@ def _create_db_session_template() -> FileTemplate:
 
 
 def _create_db_base_class_template() -> FileTemplate:
-    """Base declarativa de SQLAlchemy (clase base pura)."""
+    """SQLAlchemy declarative base (pure base class)."""
     return FileTemplate(
         "app/db/base_class.py",
         dedent("""
@@ -684,7 +684,7 @@ def _create_db_base_class_template() -> FileTemplate:
 
 
 def _create_db_base_template() -> FileTemplate:
-    """Importa Base y registra modelos para Alembic."""
+    """Import Base and register models for Alembic."""
     return FileTemplate(
         "app/db/base.py",
         dedent("""
@@ -704,7 +704,7 @@ def _create_db_base_template() -> FileTemplate:
 
 
 def _create_user_model_template() -> FileTemplate:
-    """Modelo SQLAlchemy para User."""
+    """SQLAlchemy model for User."""
     return FileTemplate(
         "app/models/user.py",
         dedent("""
@@ -741,7 +741,7 @@ def _create_user_model_template() -> FileTemplate:
 
 
 def _create_product_model_template() -> FileTemplate:
-    """Modelo SQLAlchemy para Product."""
+    """SQLAlchemy model for Product."""
     return FileTemplate(
         "app/models/product.py",
         dedent("""
@@ -778,7 +778,7 @@ def _create_product_model_template() -> FileTemplate:
 
 
 def _create_order_model_template() -> FileTemplate:
-    """Modelo SQLAlchemy para Order."""
+    """SQLAlchemy model for Order."""
     return FileTemplate(
         "app/models/order.py",
         dedent("""
@@ -825,7 +825,7 @@ def _create_order_model_template() -> FileTemplate:
 
 
 def _create_user_schema_template() -> FileTemplate:
-    """Schemas Pydantic v2 para User."""
+    """Pydantic v2 schemas for User."""
     return FileTemplate(
         "app/schemas/user.py",
         dedent("""
@@ -861,7 +861,7 @@ def _create_user_schema_template() -> FileTemplate:
 
 
 def _create_product_schema_template() -> FileTemplate:
-    """Schemas Pydantic v2 para Product."""
+    """Pydantic v2 schemas for Product."""
     return FileTemplate(
         "app/schemas/product.py",
         dedent("""
@@ -901,7 +901,7 @@ def _create_product_schema_template() -> FileTemplate:
 
 
 def _create_order_schema_template() -> FileTemplate:
-    """Schemas Pydantic v2 para Order."""
+    """Pydantic v2 schemas for Order."""
     return FileTemplate(
         "app/schemas/order.py",
         dedent("""
@@ -941,7 +941,7 @@ def _create_order_schema_template() -> FileTemplate:
 
 
 def _create_base_repository_template() -> FileTemplate:
-    """Repository pattern genérico async."""
+    """Generic async repository pattern."""
     return FileTemplate(
         "app/repositories/base.py",
         dedent("""
@@ -1040,7 +1040,7 @@ def _create_base_repository_template() -> FileTemplate:
 
 
 def _create_user_repository_template() -> FileTemplate:
-    """Repository concreto para User."""
+    """Concrete repository for User."""
     return FileTemplate(
         "app/repositories/user_repository.py",
         dedent("""
@@ -1080,7 +1080,7 @@ def _create_user_repository_template() -> FileTemplate:
 
 
 def _create_product_repository_template() -> FileTemplate:
-    """Repository concreto para Product."""
+    """Concrete repository for Product."""
     return FileTemplate(
         "app/repositories/product_repository.py",
         dedent("""
@@ -1102,7 +1102,7 @@ def _create_product_repository_template() -> FileTemplate:
 
 
 def _create_order_repository_template() -> FileTemplate:
-    """Repository concreto para Order."""
+    """Concrete repository for Order."""
     return FileTemplate(
         "app/repositories/order_repository.py",
         dedent("""
@@ -1127,7 +1127,7 @@ def _create_order_repository_template() -> FileTemplate:
 
 
 def _create_cache_service_template() -> FileTemplate:
-    """Singleton para Redis async."""
+    """Singleton for async Redis."""
     return FileTemplate(
         "app/services/cache_service.py",
         dedent("""
@@ -1214,7 +1214,7 @@ def _create_cache_service_template() -> FileTemplate:
 
 
 def _create_user_service_template() -> FileTemplate:
-    """Service layer para User con lógica de negocio."""
+    """Service layer for User with business logic."""
     return FileTemplate(
         "app/services/user_service.py",
         dedent("""
@@ -1388,7 +1388,7 @@ def _create_user_service_template() -> FileTemplate:
 
 
 def _create_product_service_template() -> FileTemplate:
-    """Service layer para Product."""
+    """Service layer for Product."""
     return FileTemplate(
         "app/services/product_service.py",
         dedent("""
@@ -1423,7 +1423,7 @@ def _create_product_service_template() -> FileTemplate:
 
 
 def _create_order_service_template() -> FileTemplate:
-    """Service layer para Order."""
+    """Service layer for Order."""
     return FileTemplate(
         "app/services/order_service.py",
         dedent("""
@@ -1468,7 +1468,7 @@ def _create_order_service_template() -> FileTemplate:
 
 
 def _create_service_factory_template() -> FileTemplate:
-    """Factory para creación de servicios con dependencias."""
+    """Factory for service creation with dependencies."""
     return FileTemplate(
         "app/factories/service_factory.py",
         dedent("""
@@ -1531,7 +1531,7 @@ def _create_service_factory_template() -> FileTemplate:
 
 
 def _create_dependencies_template() -> FileTemplate:
-    """Dependency Injection para FastAPI."""
+    """Dependency Injection for FastAPI."""
     return FileTemplate(
         "app/api/dependencies.py",
         dedent("""
@@ -1575,7 +1575,7 @@ def _create_dependencies_template() -> FileTemplate:
 
 
 def _create_api_router_template() -> FileTemplate:
-    """Router principal que agrega todos los endpoints."""
+    """Main router that aggregates all endpoints."""
     return FileTemplate(
         "app/api/v1/router.py",
         dedent("""
@@ -1612,7 +1612,7 @@ def _create_api_router_template() -> FileTemplate:
 
 
 def _create_users_endpoint_template() -> FileTemplate:
-    """CRUD endpoints para users."""
+    """CRUD endpoints for users."""
     return FileTemplate(
         "app/api/v1/endpoints/users.py",
         dedent("""
@@ -1708,7 +1708,7 @@ def _create_users_endpoint_template() -> FileTemplate:
 
 
 def _create_products_endpoint_template() -> FileTemplate:
-    """CRUD endpoints para products."""
+    """CRUD endpoints for products."""
     return FileTemplate(
         "app/api/v1/endpoints/products.py",
         dedent("""
@@ -1740,7 +1740,7 @@ def _create_products_endpoint_template() -> FileTemplate:
 
 
 def _create_orders_endpoint_template() -> FileTemplate:
-    """CRUD endpoints para orders."""
+    """CRUD endpoints for orders."""
     return FileTemplate(
         "app/api/v1/endpoints/orders.py",
         dedent("""

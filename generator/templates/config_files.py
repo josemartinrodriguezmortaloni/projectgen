@@ -51,41 +51,41 @@ def get_config_templates(
 
 
 def _create_env_example_template() -> FileTemplate:
-    """Variables de entorno documentadas."""
+    """Documented environment variables."""
     return FileTemplate(
         ".env.example",
         dedent("""
-        # Ejemplo de configuración para entorno local
-        # Copia este archivo a .env y ajusta los valores
+        # Example configuration for local environment
+        # Copy this file to .env and adjust the values
 
-        # Aplicación
-        PROJECT_NAME=Mi API
+        # Application
+        PROJECT_NAME=My API
         VERSION=1.0.0
 
-        # Base de datos PostgreSQL
-        # Para Docker: usar 'db' como host
-        # Para local: usar 'localhost'
+        # PostgreSQL Database
+        # For Docker: use 'db' as host
+        # For local: use 'localhost'
         DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mi_api
-        # DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mi_api  # Para Docker
+        # DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mi_api  # For Docker
         DB_POOL_SIZE=50
         DB_MAX_OVERFLOW=100
 
-        # Redis (para cache)
-        # Para Docker: usar 'redis' como host
-        # Para local: usar 'localhost'
+        # Redis (for caching)
+        # For Docker: use 'redis' as host
+        # For local: use 'localhost'
         REDIS_URL=redis://localhost:6379/0
-        # REDIS_URL=redis://redis:6379/0  # Para Docker
+        # REDIS_URL=redis://redis:6379/0  # For Docker
         REDIS_ENABLED=true
 
-        # Seguridad JWT
-        # IMPORTANTE: Cambia esto en producción con una clave segura y aleatoria
+        # JWT Security
+        # IMPORTANT: Change this in production with a secure random key
         SECRET_KEY=your-secret-key-change-in-production-please-use-a-long-random-string
         ALGORITHM=HS256
         ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-        # CORS (lista JSON de orígenes permitidos)
+        # CORS (JSON list of allowed origins)
         CORS_ORIGINS=["http://localhost:3000","http://localhost:8080"]
-        # CORS_ORIGINS=["*"]  # Para desarrollo (permite todos los orígenes)
+        # CORS_ORIGINS=["*"]  # For development (allows all origins)
     """),
     )
 
@@ -94,7 +94,7 @@ def _create_env_example_template() -> FileTemplate:
 
 
 def _create_gitignore_template() -> FileTemplate:
-    """Gitignore completo para Python."""
+    """Complete gitignore for Python."""
     return FileTemplate(
         ".gitignore",
         dedent("""
@@ -159,7 +159,7 @@ def _create_gitignore_template() -> FileTemplate:
 
 
 def _create_pyproject_toml_template(project_name: str) -> FileTemplate:
-    """Configuración completa con uv y ruff."""
+    """Complete configuration with uv and ruff."""
     return FileTemplate(
         "pyproject.toml",
         dedent(f"""
@@ -264,7 +264,7 @@ def _create_pyproject_toml_template(project_name: str) -> FileTemplate:
 
 
 def _create_requirements_txt_template() -> FileTemplate:
-    """Requirements.txt para compatibilidad."""
+    """Requirements.txt for compatibility."""
     return FileTemplate(
         "requirements.txt",
         dedent("""
@@ -292,13 +292,13 @@ def _create_requirements_txt_template() -> FileTemplate:
 
 
 def _create_pre_commit_config_template() -> FileTemplate:
-    """Configuración de pre-commit con ruff."""
+    """Pre-commit configuration with ruff."""
     return FileTemplate(
         ".pre-commit-config.yaml",
         dedent("""
-        # Pre-commit hooks para mantener calidad de código
-        # Instalación: pre-commit install
-        # Ejecución manual: pre-commit run --all-files
+        # Pre-commit hooks to maintain code quality
+        # Installation: pre-commit install
+        # Manual execution: pre-commit run --all-files
 
         repos:
           - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -327,7 +327,7 @@ def _create_pre_commit_config_template() -> FileTemplate:
 
 
 def _create_alembic_ini_template() -> FileTemplate:
-    """Configuración base de Alembic."""
+    """Base Alembic configuration."""
     return FileTemplate(
         "alembic.ini",
         dedent("""
@@ -396,124 +396,124 @@ def _create_alembic_ini_template() -> FileTemplate:
 
 
 def _create_alembic_env_template() -> FileTemplate:
-    """Configuración de Alembic con soporte async."""
+    """Alembic configuration with async support."""
     return FileTemplate(
         "alembic/env.py",
         dedent("""
-        import asyncio
-        import sys
-        from logging.config import fileConfig
+import asyncio
+import sys
+from logging.config import fileConfig
 
-        # Windows: configurar ProactorEventLoop para evitar problemas con asyncpg
-        if sys.platform == "win32":
-            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+# Windows: configure ProactorEventLoop to avoid issues with asyncpg
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-        from sqlalchemy import pool
-        from sqlalchemy.engine import Connection
-        from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
-        from alembic import context
+from alembic import context
 
-        from app.core.config import settings
-        # Importar base.py para que se ejecuten las importaciones de modelos
-        # Esto registra todos los modelos en Base.metadata
-        import app.db.base  # noqa: F401
-        # Luego importar Base desde base_class para acceder a metadata
-        from app.db.base_class import Base
+from app.core.config import settings
+# Import base.py to execute model imports
+# This registers all models in Base.metadata
+import app.db.base  # noqa: F401
+# Then import Base from base_class to access metadata
+from app.db.base_class import Base
 
-        # Configuración de Alembic
-        config = context.config
+# Alembic configuration
+config = context.config
 
-        # Configurar logging
-        if config.config_file_name is not None:
-            fileConfig(config.config_file_name)
+# Configure logging
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
 
-        # Sobrescribir sqlalchemy.url con la de settings
-        config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Override sqlalchemy.url with settings URL
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
-        # Metadata para autogenerar migraciones
-        # Base.metadata contiene todos los modelos importados en base.py
-        target_metadata = Base.metadata
-
-
-        def run_migrations_offline() -> None:
-            '''
-            Run migrations in 'offline' mode.
-            No requiere conexión activa a la BD.
-            '''
-            url = config.get_main_option("sqlalchemy.url")
-            context.configure(
-                url=url,
-                target_metadata=target_metadata,
-                literal_binds=True,
-                dialect_opts={"paramstyle": "named"},
-                compare_type=True,
-            )
-
-            with context.begin_transaction():
-                context.run_migrations()
+# Metadata for autogenerating migrations
+# Base.metadata contains all models imported in base.py
+target_metadata = Base.metadata
 
 
-        def do_run_migrations(connection: Connection) -> None:
-            '''
-            Helper para ejecutar migraciones con conexión.
-            '''
-            context.configure(
-                connection=connection,
-                target_metadata=target_metadata,
-                compare_type=True,
-            )
+def run_migrations_offline() -> None:
+    '''
+    Run migrations in 'offline' mode.
+    Does not require active DB connection.
+    '''
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+    )
 
-            with context.begin_transaction():
-                context.run_migrations()
-
-
-        async def run_async_migrations() -> None:
-            '''
-            Ejecuta migraciones en modo async.
-            '''
-            connectable = async_engine_from_config(
-                config.get_section(config.config_ini_section, {}),
-                prefix="sqlalchemy.",
-                poolclass=pool.NullPool,
-            )
-
-            try:
-                async with connectable.connect() as connection:
-                    await connection.run_sync(do_run_migrations)
-            except Exception as e:
-                # Proporcionar mensaje de error más claro
-                url = config.get_main_option("sqlalchemy.url")
-                raise RuntimeError(
-                    f"Error conectando a la base de datos: {e}\n"
-                    f"URL de conexión: {url}\n"
-                    f"Asegúrate de que la base de datos esté corriendo y accesible."
-                ) from e
-            finally:
-                await connectable.dispose()
+    with context.begin_transaction():
+        context.run_migrations()
 
 
-        def run_migrations_online() -> None:
-            '''
-            Run migrations in 'online' mode.
-            Requiere conexión activa a la BD (modo async).
-            Manejo robusto del event loop para Windows.
-            '''
-            # Crear un nuevo event loop explícitamente para evitar problemas en Windows
-            # cuando hay event loops existentes o cerrados
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(run_async_migrations())
-            finally:
-                loop.close()
+def do_run_migrations(connection: Connection) -> None:
+    '''
+    Helper to run migrations with connection.
+    '''
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
 
 
-        if context.is_offline_mode():
-            run_migrations_offline()
-        else:
-            run_migrations_online()
-    """),
+async def run_async_migrations() -> None:
+    '''
+    Run migrations in async mode.
+    '''
+    connectable = async_engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    try:
+        async with connectable.connect() as connection:
+            await connection.run_sync(do_run_migrations)
+    except Exception as e:
+        # Provide clearer error message
+        url = config.get_main_option("sqlalchemy.url")
+        raise RuntimeError(
+            f"Error connecting to database: {e}\\n"
+            f"Connection URL: {url}\\n"
+            f"Make sure the database is running and accessible."
+        ) from e
+    finally:
+        await connectable.dispose()
+
+
+def run_migrations_online() -> None:
+    '''
+    Run migrations in 'online' mode.
+    Requires active DB connection (async mode).
+    Robust event loop handling for Windows.
+    '''
+    # Create a new event loop explicitly to avoid issues on Windows
+    # when there are existing or closed event loops
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(run_async_migrations())
+    finally:
+        loop.close()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+"""),
     )
 
 
@@ -521,7 +521,7 @@ def _create_alembic_env_template() -> FileTemplate:
 
 
 def _create_alembic_script_mako_template() -> FileTemplate:
-    """Template Mako para archivos de migración."""
+    """Mako template for migration files."""
     return FileTemplate(
         "alembic/script.py.mako",
         dedent('''
@@ -559,7 +559,7 @@ def _create_alembic_script_mako_template() -> FileTemplate:
 
 
 def _create_dockerfile_template() -> FileTemplate:
-    """Dockerfile multi-stage optimizado."""
+    """Optimized multi-stage Dockerfile."""
     return FileTemplate(
         "Dockerfile",
         dedent("""
@@ -622,7 +622,7 @@ def _create_dockerfile_template() -> FileTemplate:
 
 
 def _create_docker_compose_template() -> FileTemplate:
-    """Docker Compose con API, Postgres y Redis."""
+    """Docker Compose with API, Postgres, and Redis."""
     return FileTemplate(
         "docker-compose.yml",
         dedent("""
@@ -707,148 +707,151 @@ def _create_docker_compose_template() -> FileTemplate:
 
 
 def _create_readme_template(project_name: str) -> FileTemplate:
-    """README completo con documentación."""
+    """Complete README with documentation."""
     return FileTemplate(
         "README.md",
         dedent(f"""
         # {project_name}
 
-        API FastAPI con arquitectura limpia aplicando principios SOLID y patrones de diseño GoF/GRASP.
+        FastAPI Clean Architecture API applying SOLID principles and GoF/GRASP design patterns.
 
-        ## 🚀 Stack Tecnológico
+        ## 🚀 Tech Stack
 
         - **Python**: 3.12+
-        - **FastAPI**: 0.115+ (framework web async)
-        - **SQLAlchemy**: 2.0+ (ORM async)
-        - **PostgreSQL**: 16 (base de datos)
+        - **FastAPI**: 0.115+ (async web framework)
+        - **SQLAlchemy**: 2.0+ (async ORM)
+        - **PostgreSQL**: 16 (database)
         - **Redis**: 7 (cache)
-        - **Alembic**: 1.14+ (migraciones)
-        - **Pydantic**: 2.10+ (validación de datos)
-        - **Ruff**: 0.8+ (linter y formatter)
+        - **Alembic**: 1.14+ (migrations)
+        - **Pydantic**: 2.10+ (data validation)
+        - **Ruff**: 0.8+ (linter and formatter)
 
-        ## 📁 Estructura del Proyecto
+        ## 📁 Project Structure
 
         ```
         {project_name}/
         ├── app/
-        │   ├── api/              # Endpoints HTTP (capa de presentación)
-        │   ├── core/             # Configuración, seguridad, eventos
-        │   ├── db/               # Sesión y base SQLAlchemy
-        │   ├── models/           # Modelos SQLAlchemy (tablas)
-        │   ├── schemas/          # Schemas Pydantic (validación)
-        │   ├── repositories/     # Repository pattern (acceso a datos)
-        │   ├── services/         # Service layer (lógica de negocio)
-        │   ├── factories/        # Factory pattern (creación de servicios)
-        │   └── utils/            # Utilidades generales
-        ├── tests/                # Tests unitarios e integración
-        ├── alembic/              # Migraciones de base de datos
-        └── docker-compose.yml    # Orquestación de servicios
+        │   ├── api/              # HTTP Endpoints (presentation layer)
+        │   ├── core/             # Configuration, security, events
+        │   ├── db/               # SQLAlchemy session and base
+        │   ├── models/           # SQLAlchemy models (tables)
+        │   ├── schemas/          # Pydantic schemas (validation)
+        │   ├── repositories/     # Repository pattern (data access)
+        │   ├── services/         # Service layer (business logic)
+        │   ├── factories/        # Factory pattern (service creation)
+        │   └── utils/            # General utilities
+        ├── tests/                # Unit and integration tests
+        ├── alembic/              # Database migrations
+        └── docker-compose.yml    # Service orchestration
         ```
 
-        ## 🎨 Patrones de Diseño Aplicados
+        ## 🎨 Applied Design Patterns
 
         ### SOLID
-        - **S**ingle Responsibility: Cada módulo tiene una única responsabilidad
-        - **O**pen/Closed: Extendible sin modificar código existente
-        - **L**iskov Substitution: Subclases intercambiables con clases base
-        - **I**nterface Segregation: Interfaces específicas y pequeñas
-        - **D**ependency Inversion: Dependencias de abstracciones, no concreciones
+        - **S**ingle Responsibility: Each module has a single responsibility
+        - **O**pen/Closed: Extendable without modifying existing code
+        - **L**iskov Substitution: Subclasses interchangeable with base classes
+        - **I**nterface Segregation: Specific and small interfaces
+        - **D**ependency Inversion: Dependencies on abstractions, not concretions
 
         ### GoF (Gang of Four)
         - **Singleton**: Config, CacheService
-        - **Factory**: ServiceFactory para creación de servicios
-        - **Strategy**: PasswordHasher (Bcrypt/Argon2 intercambiables)
-        - **Observer**: EventDispatcher para eventos del sistema
-        - **Repository**: Abstracción de acceso a datos
+        - **Factory**: ServiceFactory for service creation
+        - **Strategy**: PasswordHasher (Bcrypt/Argon2 interchangeable)
+        - **Observer**: EventDispatcher for system events
+        - **Repository**: Data access abstraction
 
         ### GRASP
-        - **Creator**: Factories responsables de crear objetos
-        - **Information Expert**: Cada clase conoce sus propios datos
-        - **Controller**: Endpoints como controllers HTTP
-        - **Low Coupling**: Módulos independientes
-        - **High Cohesion**: Responsabilidades relacionadas juntas
+        - **Creator**: Factories responsible for creating objects
+        - **Information Expert**: Each class knows its own data
+        - **Controller**: Endpoints as HTTP controllers
+        - **Low Coupling**: Independent modules
+        - **High Cohesion**: Related responsibilities together
 
-        ## 🛠️ Instalación y Uso
+        ## 🛠️ Installation and Usage
 
-        ### Opción 1: Con Docker (Recomendado)
+        ### Option 1: With Docker (Recommended)
 
         ```bash
-        # 1. Clonar y entrar al directorio
+        # 1. Clone and enter directory
         cd {project_name}
 
-        # 2. Copiar variables de entorno
+        # 2. Copy environment variables
         cp .env.example .env
 
-        # 3. Editar .env con tus configuraciones
+        # 3. Edit .env with your settings
         nano .env
 
-        # 4. Levantar servicios
+        # 4. Start services
         docker-compose up -d
 
-        # 5. Ejecutar migraciones
+        # 5. Run migrations
         docker-compose exec api alembic upgrade head
         ```
 
-        ### Opción 2: Desarrollo Local
+        ### Option 2: Local Development
 
         ```bash
-        # 1. Crear entorno virtual con uv (recomendado)
+        # 1. Create virtual environment with uv (recommended)
         uv venv
         source .venv/bin/activate  # Linux/Mac
-        # o
+        # or
         .venv\\Scripts\\activate  # Windows
 
-        # 2. Instalar dependencias
+        # 2. Install dependencies
         uv sync
-        # o
+        # or
         pip install -r requirements.txt
 
-        # 3. Copiar y configurar .env
+        # Note: If you see a warning about VIRTUAL_ENV not matching,
+        # it's safe to ignore. UV will create the correct virtual environment.
+
+        # 3. Copy and configure .env
         cp .env.example .env
 
-        # 4. Levantar PostgreSQL y Redis (con Docker)
+        # 4. Start PostgreSQL and Redis (with Docker)
         docker-compose up -d db redis
 
-        # 5. Ejecutar migraciones
+        # 5. Run migrations
         alembic upgrade head
 
-        # 6. Iniciar servidor de desarrollo
+        # 6. Start development server
         uvicorn app.main:app --reload
         ```
 
         ## 📚 API Endpoints
 
-        Una vez iniciado el servidor, la API está disponible en:
+        Once the server is started, the API is available at:
 
         - **API Base**: http://localhost:8000
-        - **Documentación Interactiva (Swagger)**: http://localhost:8000/docs
-        - **Documentación Alternativa (ReDoc)**: http://localhost:8000/redoc
+        - **Interactive Documentation (Swagger)**: http://localhost:8000/docs
+        - **Alternative Documentation (ReDoc)**: http://localhost:8000/redoc
 
-        ### Endpoints Disponibles
+        ### Available Endpoints
 
         #### Users
-        - `GET /api/v1/users` - Listar usuarios
-        - `GET /api/v1/users/{{id}}` - Obtener usuario
-        - `POST /api/v1/users` - Crear usuario
-        - `PUT /api/v1/users/{{id}}` - Actualizar usuario
-        - `DELETE /api/v1/users/{{id}}` - Eliminar usuario
+        - `GET /api/v1/users` - List users
+        - `GET /api/v1/users/{{id}}` - Get user
+        - `POST /api/v1/users` - Create user
+        - `PUT /api/v1/users/{{id}}` - Update user
+        - `DELETE /api/v1/users/{{id}}` - Delete user
 
         #### Products
-        - `GET /api/v1/products` - Listar productos
+        - `GET /api/v1/products` - List products
 
         #### Orders
-        - `GET /api/v1/orders` - Listar órdenes
+        - `GET /api/v1/orders` - List orders
 
         ## 🧪 Testing
 
         ```bash
-        # Ejecutar todos los tests
+        # Run all tests
         pytest
 
-        # Con coverage
+        # With coverage
         pytest --cov=app --cov-report=html
 
-        # Tests específicos
+        # Specific tests
         pytest tests/unit/
         pytest tests/integration/
         ```
@@ -869,19 +872,19 @@ def _create_readme_template(project_name: str) -> FileTemplate:
         pre-commit run --all-files
         ```
 
-        ### Migraciones de Base de Datos
+        ### Database Migrations
 
         ```bash
-        # Crear nueva migración (autogenerar)
-        alembic revision --autogenerate -m "descripción del cambio"
+        # Create new migration (autogenerate)
+        alembic revision --autogenerate -m "change description"
 
-        # Aplicar migraciones
+        # Apply migrations
         alembic upgrade head
 
-        # Revertir última migración
+        # Rollback last migration
         alembic downgrade -1
 
-        # Ver historial
+        # View history
         alembic history
         ```
 
@@ -890,65 +893,65 @@ def _create_readme_template(project_name: str) -> FileTemplate:
         ### Logs
 
         ```bash
-        # Ver logs de la API
+        # View API logs
         docker-compose logs -f api
 
-        # Ver logs de PostgreSQL
+        # View PostgreSQL logs
         docker-compose logs -f db
 
-        # Ver logs de Redis
+        # View Redis logs
         docker-compose logs -f redis
         ```
 
-        ### Acceso a Base de Datos
+        ### Database Access
 
         ```bash
-        # Conectar a PostgreSQL
+        # Connect to PostgreSQL
         docker-compose exec db psql -U postgres -d mi_api
 
-        # Conectar a Redis
+        # Connect to Redis
         docker-compose exec redis redis-cli
         ```
 
-        ## 📖 Documentación Adicional
+        ## 📖 Additional Documentation
 
-        ### Agregar Nuevo Endpoint
+        ### Adding a New Endpoint
 
-        1. Crear modelo en `app/models/`
-        2. Crear schema en `app/schemas/`
-        3. Crear repository en `app/repositories/`
-        4. Crear service en `app/services/`
-        5. Agregar factory method en `app/factories/service_factory.py`
-        6. Crear endpoint en `app/api/v1/endpoints/`
-        7. Registrar router en `app/api/v1/router.py`
-        8. Crear migración: `alembic revision --autogenerate -m "add nuevo_modelo"`
-        9. Aplicar: `alembic upgrade head`
+        1. Create model in `app/models/`
+        2. Create schema in `app/schemas/`
+        3. Create repository in `app/repositories/`
+        4. Create service in `app/services/`
+        5. Add factory method in `app/factories/service_factory.py`
+        6. Create endpoint in `app/api/v1/endpoints/`
+        7. Register router in `app/api/v1/router.py`
+        8. Create migration: `alembic revision --autogenerate -m "add new_model"`
+        9. Apply: `alembic upgrade head`
 
-        ### Variables de Entorno Importantes
+        ### Important Environment Variables
 
-        - `DATABASE_URL`: URL de conexión a PostgreSQL
-        - `REDIS_URL`: URL de conexión a Redis
-        - `SECRET_KEY`: Clave secreta para JWT (cambiar en producción)
-        - `CORS_ORIGINS`: Orígenes permitidos para CORS
+        - `DATABASE_URL`: PostgreSQL connection URL
+        - `REDIS_URL`: Redis connection URL
+        - `SECRET_KEY`: Secret key for JWT (change in production)
+        - `CORS_ORIGINS`: Allowed origins for CORS
 
-        ## 🤝 Contribuir
+        ## 🤝 Contributing
 
-        1. Fork el proyecto
-        2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-        3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-        4. Push a la rama (`git push origin feature/AmazingFeature`)
-        5. Abre un Pull Request
+        1. Fork the project
+        2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+        3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+        4. Push to the branch (`git push origin feature/AmazingFeature`)
+        5. Open a Pull Request
 
-        ## 📝 Licencia
+        ## 📝 License
 
-        Este proyecto usa una arquitectura base generada con principios de diseño profesional.
+        This project uses a base architecture generated with professional design principles.
 
-        ## 🙏 Agradecimientos
+        ## 🙏 Acknowledgments
 
-        - FastAPI por el excelente framework
-        - SQLAlchemy por el poderoso ORM
-        - Alembic por las migraciones
-        - Ruff por el linting ultrarrápido
+        - FastAPI for the excellent framework
+        - SQLAlchemy for the powerful ORM
+        - Alembic for migrations
+        - Ruff for ultra-fast linting
     """),
     )
 
