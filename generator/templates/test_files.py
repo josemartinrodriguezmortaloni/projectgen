@@ -58,7 +58,7 @@ def _create_conftest_template() -> FileTemplate:
         from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
         from app.main import app
-        from app.db.base import Base
+        from app.db.base_class import Base
         from app.db.session import get_db
 
 
@@ -203,7 +203,7 @@ def _create_unit_test_services_template() -> FileTemplate:
                 '''Test get_all cuando hay cache hit'''
                 # Arrange
                 cached_data = [
-                    {{"id": 1, "email": "user1@example.com", "name": "User 1", "is_active": True}},
+                    {"id": 1, "email": "user1@example.com", "name": "User 1", "is_active": True},
                 ]
                 mock_cache.get.return_value = cached_data
 
@@ -408,8 +408,8 @@ def _create_unit_test_repositories_template() -> FileTemplate:
             repository = UserRepository(db_session)
             for i in range(5):
                 user = User(
-                    email=f"user{{i}}@example.com",
-                    name=f"User {{i}}",
+                    email=f"user{i}@example.com",
+                    name=f"User {i}",
                     hashed_password="hashedpassword123"
                 )
                 await repository.create(user)
@@ -439,11 +439,11 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
         async def test_create_user(client: AsyncClient):
             '''Test E2E: Crear usuario'''
             # Arrange
-            user_data = {{
+            user_data = {
                 "email": "newuser@example.com",
                 "name": "New User",
                 "password": "securepassword123"
-            }}
+            }
 
             # Act
             response = await client.post("/api/v1/users/", json=user_data)
@@ -462,11 +462,11 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
             '''Test E2E: Obtener lista de usuarios'''
             # Arrange - Crear algunos usuarios primero
             for i in range(3):
-                await client.post("/api/v1/users/", json={{
-                    "email": f"user{{i}}@example.com",
-                    "name": f"User {{i}}",
+                await client.post("/api/v1/users/", json={
+                    "email": f"user{i}@example.com",
+                    "name": f"User {i}",
                     "password": "password123"
-                }})
+                })
 
             # Act
             response = await client.get("/api/v1/users/")
@@ -481,15 +481,15 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
         async def test_get_user_by_id(client: AsyncClient):
             '''Test E2E: Obtener usuario por ID'''
             # Arrange - Crear usuario
-            create_response = await client.post("/api/v1/users/", json={{
+            create_response = await client.post("/api/v1/users/", json={
                 "email": "getuser@example.com",
                 "name": "Get User",
                 "password": "password123"
-            }})
+            })
             user_id = create_response.json()["id"]
 
             # Act
-            response = await client.get(f"/api/v1/users/{{user_id}}")
+            response = await client.get(f"/api/v1/users/{user_id}")
 
             # Assert
             assert response.status_code == 200
@@ -512,16 +512,16 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
         async def test_update_user(client: AsyncClient):
             '''Test E2E: Actualizar usuario'''
             # Arrange - Crear usuario
-            create_response = await client.post("/api/v1/users/", json={{
+            create_response = await client.post("/api/v1/users/", json={
                 "email": "updateuser@example.com",
                 "name": "Update User",
                 "password": "password123"
-            }})
+            })
             user_id = create_response.json()["id"]
 
             # Act
-            update_data = {{"name": "Updated Name"}}
-            response = await client.put(f"/api/v1/users/{{user_id}}", json=update_data)
+            update_data = {"name": "Updated Name"}
+            response = await client.put(f"/api/v1/users/{user_id}", json=update_data)
 
             # Assert
             assert response.status_code == 200
@@ -534,21 +534,21 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
         async def test_delete_user(client: AsyncClient):
             '''Test E2E: Eliminar usuario'''
             # Arrange - Crear usuario
-            create_response = await client.post("/api/v1/users/", json={{
+            create_response = await client.post("/api/v1/users/", json={
                 "email": "deleteuser@example.com",
                 "name": "Delete User",
                 "password": "password123"
-            }})
+            })
             user_id = create_response.json()["id"]
 
             # Act
-            response = await client.delete(f"/api/v1/users/{{user_id}}")
+            response = await client.delete(f"/api/v1/users/{user_id}")
 
             # Assert
             assert response.status_code == 204
 
             # Verificar que ya no existe
-            get_response = await client.get(f"/api/v1/users/{{user_id}}")
+            get_response = await client.get(f"/api/v1/users/{user_id}")
             assert get_response.status_code == 404
 
 
@@ -556,11 +556,11 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
         async def test_create_user_duplicate_email(client: AsyncClient):
             '''Test E2E: Crear usuario con email duplicado'''
             # Arrange - Crear usuario
-            user_data = {{
+            user_data = {
                 "email": "duplicate@example.com",
                 "name": "User",
                 "password": "password123"
-            }}
+            }
             await client.post("/api/v1/users/", json=user_data)
 
             # Act - Intentar crear otro con mismo email
@@ -575,11 +575,11 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
         async def test_create_user_short_password(client: AsyncClient):
             '''Test E2E: Crear usuario con password muy corto'''
             # Arrange
-            user_data = {{
+            user_data = {
                 "email": "test@example.com",
                 "name": "Test User",
                 "password": "short"
-            }}
+            }
 
             # Act
             response = await client.post("/api/v1/users/", json=user_data)

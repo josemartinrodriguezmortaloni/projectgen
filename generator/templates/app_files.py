@@ -46,6 +46,7 @@ def get_app_templates(project_name: str, hash_algo: str) -> list[FileTemplate]:
         """),
         ),
         _create_db_session_template(),
+        _create_db_base_class_template(),
         _create_db_base_template(),
         # app/models/
         FileTemplate(
@@ -377,7 +378,7 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
                 Crea JWT access token.
 
                 Args:
-                    data: Payload del token (ej: {{"sub": "user_id"}})
+                    data: Payload del token (ej: {"sub": "user_id"})
                     expires_delta: Tiempo de expiración custom
                 '''
                 to_encode = data.copy()
@@ -389,7 +390,7 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
                         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
                     )
 
-                to_encode.update({{"exp": expire}})
+                to_encode.update({"exp": expire})
                 encoded_jwt = jwt.encode(
                     to_encode,
                     settings.SECRET_KEY,
@@ -460,14 +461,14 @@ def _create_events_template() -> FileTemplate:
                 from app.core.events import event_dispatcher, EventType, Event
 
                 async def handle_user_created(event: Event):
-                    print(f"Usuario creado: {{event.data}}")
+                    print(f"Usuario creado: {event.data}")
 
                 event_dispatcher.subscribe(EventType.USER_CREATED, handle_user_created)
-                await event_dispatcher.dispatch(Event(EventType.USER_CREATED, {{"id": 1}}))
+                await event_dispatcher.dispatch(Event(EventType.USER_CREATED, {"id": 1}))
             '''
 
             def __init__(self) -> None:
-                self._listeners: dict[EventType, list[Callable]] = {{}}
+                self._listeners: dict[EventType, list[Callable]] = {}
 
             def subscribe(self, event_type: EventType, listener: Callable) -> None:
                 '''
@@ -504,7 +505,7 @@ def _create_events_template() -> FileTemplate:
                                 await result
                     except Exception as exc:
                         # Log error pero no detiene otros listeners
-                        print(f"Error in event listener: {{exc}}")
+                        print(f"Error in event listener: {exc}")
 
 
         # Singleton: Instancia global
@@ -517,7 +518,7 @@ def _create_events_template() -> FileTemplate:
             Listener: Envía email de bienvenida cuando se crea usuario.
             '''
             user_data = event.data
-            print(f"📧 Sending welcome email to {{user_data.get('email')}}")
+            print(f"📧 Sending welcome email to {user_data.get('email')}")
             # Aquí iría la lógica real de envío
 
 
@@ -526,7 +527,7 @@ def _create_events_template() -> FileTemplate:
             Listener: Registra creación de usuario en logs.
             '''
             user_data = event.data
-            print(f"📝 User created: {{user_data.get('id')}} - {{user_data.get('email')}}")
+            print(f"📝 User created: {user_data.get('id')} - {user_data.get('email')}")
 
 
         async def notify_low_stock(event: Event) -> None:
@@ -534,7 +535,7 @@ def _create_events_template() -> FileTemplate:
             Listener: Notifica cuando un producto tiene stock bajo.
             '''
             product_data = event.data
-            print(f"⚠️ Low stock alert: {{product_data.get('name')}} - Stock: {{product_data.get('stock')}}")
+            print(f"⚠️ Low stock alert: {product_data.get('name')} - Stock: {product_data.get('stock')}")
 
 
         # Registrar listeners por defecto
@@ -668,17 +669,30 @@ def _create_db_session_template() -> FileTemplate:
     )
 
 
-def _create_db_base_template() -> FileTemplate:
-    """Base declarativa de SQLAlchemy."""
+def _create_db_base_class_template() -> FileTemplate:
+    """Base declarativa de SQLAlchemy (clase base pura)."""
     return FileTemplate(
-        "app/db/base.py",
+        "app/db/base_class.py",
         dedent("""
         from sqlalchemy.orm import declarative_base
 
         # Base declarativa para todos los modelos
+        # Este archivo contiene solo la definición de Base para evitar importaciones circulares
         Base = declarative_base()
+    """),
+    )
+
+
+def _create_db_base_template() -> FileTemplate:
+    """Importa Base y registra modelos para Alembic."""
+    return FileTemplate(
+        "app/db/base.py",
+        dedent("""
+        # Importar Base desde base_class para evitar importaciones circulares
+        from app.db.base_class import Base  # noqa: F401
 
         # Importar todos los modelos aquí para que Alembic los detecte
+        # Los modelos importan Base desde base_class, no desde aquí
         from app.models.user import User  # noqa: F401
         from app.models.product import Product  # noqa: F401
         from app.models.order import Order  # noqa: F401
@@ -696,7 +710,7 @@ def _create_user_model_template() -> FileTemplate:
         dedent("""
         from sqlalchemy import Boolean, Column, DateTime, Integer, String, func
 
-        from app.db.base import Base
+        from app.db.base_class import Base
 
 
         class User(Base):
@@ -733,7 +747,7 @@ def _create_product_model_template() -> FileTemplate:
         dedent("""
         from sqlalchemy import Column, DateTime, Integer, Numeric, String, func
 
-        from app.db.base import Base
+        from app.db.base_class import Base
 
 
         class Product(Base):
@@ -771,7 +785,7 @@ def _create_order_model_template() -> FileTemplate:
         from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, func
         from sqlalchemy.orm import relationship
 
-        from app.db.base import Base
+        from app.db.base_class import Base
 
 
         class Order(Base):
@@ -937,7 +951,7 @@ def _create_base_repository_template() -> FileTemplate:
         from sqlalchemy.ext.asyncio import AsyncSession
 
         from app.core.exceptions import DatabaseError
-        from app.db.base import Base
+        from app.db.base_class import Base
 
 
         ModelType = TypeVar("ModelType", bound=Base)
@@ -969,7 +983,7 @@ def _create_base_repository_template() -> FileTemplate:
                     )
                     return result.scalar_one_or_none()
                 except Exception as exc:
-                    raise DatabaseError(f"Error fetching {{self._model.__name__}}: {{exc}}")
+                    raise DatabaseError(f"Error fetching {self._model.__name__}: {exc}")
 
             async def get_all(
                 self,
@@ -983,7 +997,7 @@ def _create_base_repository_template() -> FileTemplate:
                     )
                     return list(result.scalars().all())
                 except Exception as exc:
-                    raise DatabaseError(f"Error fetching {{self._model.__name__}} list: {{exc}}")
+                    raise DatabaseError(f"Error fetching {self._model.__name__} list: {exc}")
 
             async def create(self, entity: ModelType) -> ModelType:
                 '''Crea nueva entidad'''
@@ -994,7 +1008,7 @@ def _create_base_repository_template() -> FileTemplate:
                     return entity
                 except Exception as exc:
                     await self._db.rollback()
-                    raise DatabaseError(f"Error creating {{self._model.__name__}}: {{exc}}")
+                    raise DatabaseError(f"Error creating {self._model.__name__}: {exc}")
 
             async def update(self, entity: ModelType) -> ModelType:
                 '''Actualiza entidad existente'''
@@ -1004,7 +1018,7 @@ def _create_base_repository_template() -> FileTemplate:
                     return entity
                 except Exception as exc:
                     await self._db.rollback()
-                    raise DatabaseError(f"Error updating {{self._model.__name__}}: {{exc}}")
+                    raise DatabaseError(f"Error updating {self._model.__name__}: {exc}")
 
             async def delete(self, entity: ModelType) -> None:
                 '''Elimina entidad'''
@@ -1013,7 +1027,7 @@ def _create_base_repository_template() -> FileTemplate:
                     await self._db.commit()
                 except Exception as exc:
                     await self._db.rollback()
-                    raise DatabaseError(f"Error deleting {{self._model.__name__}}: {{exc}}")
+                    raise DatabaseError(f"Error deleting {self._model.__name__}: {exc}")
 
             async def exists(self, id: int) -> bool:
                 '''Verifica si existe entidad'''
@@ -1244,7 +1258,7 @@ def _create_user_service_template() -> FileTemplate:
                 limit: int = 100
             ) -> list[UserResponse]:
                 '''Obtiene todos los usuarios (con cache)'''
-                cache_key = f"users:list:{{skip}}:{{limit}}"
+                cache_key = f"users:list:{skip}:{limit}"
                 cached = await self._cache.get(cache_key)
 
                 if cached:
@@ -1262,7 +1276,7 @@ def _create_user_service_template() -> FileTemplate:
 
             async def get_by_id(self, user_id: int) -> UserResponse:
                 '''Obtiene usuario por ID (con cache)'''
-                cache_key = f"users:id:{{user_id}}"
+                cache_key = f"users:id:{user_id}"
                 cached = await self._cache.get(cache_key)
 
                 if cached:
@@ -1270,7 +1284,7 @@ def _create_user_service_template() -> FileTemplate:
 
                 user = await self._repository.get_by_id(user_id)
                 if not user:
-                    raise InstanceNotFoundError(f"User with id {{user_id}} not found")
+                    raise InstanceNotFoundError(f"User with id {user_id} not found")
 
                 user_dict = UserResponse.model_validate(user).model_dump()
                 await self._cache.set(cache_key, user_dict, ttl=300)
@@ -1286,7 +1300,7 @@ def _create_user_service_template() -> FileTemplate:
                 # Validación de negocio
                 if await self._repository.email_exists(user_data.email):
                     raise DuplicateEmailError(
-                        f"Email {{user_data.email}} already exists"
+                        f"Email {user_data.email} already exists"
                     )
 
                 if len(user_data.password) < 8:
@@ -1311,11 +1325,11 @@ def _create_user_service_template() -> FileTemplate:
                 # Disparar evento
                 await event_dispatcher.dispatch(Event(
                     EventType.USER_CREATED,
-                    data={{
+                    data={
                         "id": created_user.id,
                         "email": created_user.email,
                         "name": created_user.name
-                    }}
+                    }
                 ))
 
                 return UserResponse.model_validate(created_user)
@@ -1328,13 +1342,13 @@ def _create_user_service_template() -> FileTemplate:
                 '''Actualiza usuario existente'''
                 user = await self._repository.get_by_id(user_id)
                 if not user:
-                    raise InstanceNotFoundError(f"User with id {{user_id}} not found")
+                    raise InstanceNotFoundError(f"User with id {user_id} not found")
 
                 # Validar email único si se cambia
                 if user_data.email and user_data.email != user.email:
                     if await self._repository.email_exists(user_data.email):
                         raise DuplicateEmailError(
-                            f"Email {{user_data.email}} already exists"
+                            f"Email {user_data.email} already exists"
                         )
 
                 # Actualizar campos
@@ -1353,7 +1367,7 @@ def _create_user_service_template() -> FileTemplate:
                 updated_user = await self._repository.update(user)
 
                 # Invalidar cache
-                await self._cache.delete(f"users:id:{{user_id}}")
+                await self._cache.delete(f"users:id:{user_id}")
                 await self._cache.delete("users:list:*")
 
                 return UserResponse.model_validate(updated_user)
@@ -1362,12 +1376,12 @@ def _create_user_service_template() -> FileTemplate:
                 '''Elimina usuario'''
                 user = await self._repository.get_by_id(user_id)
                 if not user:
-                    raise InstanceNotFoundError(f"User with id {{user_id}} not found")
+                    raise InstanceNotFoundError(f"User with id {user_id} not found")
 
                 await self._repository.delete(user)
 
                 # Invalidar cache
-                await self._cache.delete(f"users:id:{{user_id}}")
+                await self._cache.delete(f"users:id:{user_id}")
                 await self._cache.delete("users:list:*")
     """),
     )
@@ -1634,7 +1648,7 @@ def _create_users_endpoint_template() -> FileTemplate:
             return await service.get_all(skip, limit)
 
 
-        @router.get("/{{user_id}}", response_model=UserResponse)
+        @router.get("/{user_id}", response_model=UserResponse)
         async def get_user(
             user_id: int,
             service: Annotated[UserService, Depends(get_user_service)] = None,
@@ -1664,7 +1678,7 @@ def _create_users_endpoint_template() -> FileTemplate:
                 raise HTTPException(status_code=400, detail=str(exc))
 
 
-        @router.put("/{{user_id}}", response_model=UserResponse)
+        @router.put("/{user_id}", response_model=UserResponse)
         async def update_user(
             user_id: int,
             user: UserUpdate,
@@ -1679,7 +1693,7 @@ def _create_users_endpoint_template() -> FileTemplate:
                 raise HTTPException(status_code=400, detail=str(exc))
 
 
-        @router.delete("/{{user_id}}", status_code=status.HTTP_204_NO_CONTENT)
+        @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
         async def delete_user(
             user_id: int,
             service: Annotated[UserService, Depends(get_user_service)] = None,

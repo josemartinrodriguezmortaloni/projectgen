@@ -63,21 +63,29 @@ def _create_env_example_template() -> FileTemplate:
         VERSION=1.0.0
 
         # Base de datos PostgreSQL
+        # Para Docker: usar 'db' como host
+        # Para local: usar 'localhost'
         DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mi_api
+        # DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mi_api  # Para Docker
         DB_POOL_SIZE=50
         DB_MAX_OVERFLOW=100
 
         # Redis (para cache)
+        # Para Docker: usar 'redis' como host
+        # Para local: usar 'localhost'
         REDIS_URL=redis://localhost:6379/0
-        REDIS_ENABLED=True
+        # REDIS_URL=redis://redis:6379/0  # Para Docker
+        REDIS_ENABLED=true
 
         # Seguridad JWT
-        SECRET_KEY=changeme-generate-secure-key-here
+        # IMPORTANTE: Cambia esto en producción con una clave segura y aleatoria
+        SECRET_KEY=your-secret-key-change-in-production-please-use-a-long-random-string
         ALGORITHM=HS256
         ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-        # CORS (lista separada por comas)
+        # CORS (lista JSON de orígenes permitidos)
         CORS_ORIGINS=["http://localhost:3000","http://localhost:8080"]
+        # CORS_ORIGINS=["*"]  # Para desarrollo (permite todos los orígenes)
     """),
     )
 
@@ -167,8 +175,9 @@ def _create_pyproject_toml_template(project_name: str) -> FileTemplate:
             "sqlalchemy[asyncio]>=2.0.36",
             "asyncpg>=0.30.0",
             "alembic>=1.14.0",
-            "pydantic>=2.10.0",
+            "pydantic[email]>=2.10.0",
             "pydantic-settings>=2.6.0",
+            "email-validator>=2.0.0",
             "passlib[bcrypt]>=1.7.4",
             "argon2-cffi>=23.1.0",
             "pyjwt>=2.10.0",
@@ -267,8 +276,9 @@ def _create_requirements_txt_template() -> FileTemplate:
         sqlalchemy[asyncio]>=2.0.36
         asyncpg>=0.30.0
         alembic>=1.14.0
-        pydantic>=2.10.0
+        pydantic[email]>=2.10.0
         pydantic-settings>=2.6.0
+        email-validator>=2.0.0
         passlib[bcrypt]>=1.7.4
         argon2-cffi>=23.1.0
         pyjwt>=2.10.0
@@ -391,7 +401,12 @@ def _create_alembic_env_template() -> FileTemplate:
         "alembic/env.py",
         dedent("""
         import asyncio
+        import sys
         from logging.config import fileConfig
+
+        # Windows: configurar ProactorEventLoop para evitar problemas con asyncpg
+        if sys.platform == "win32":
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
         from sqlalchemy import pool
         from sqlalchemy.engine import Connection
@@ -400,7 +415,11 @@ def _create_alembic_env_template() -> FileTemplate:
         from alembic import context
 
         from app.core.config import settings
-        from app.db.base import Base
+        # Importar base.py para que se ejecuten las importaciones de modelos
+        # Esto registra todos los modelos en Base.metadata
+        import app.db.base  # noqa: F401
+        # Luego importar Base desde base_class para acceder a metadata
+        from app.db.base_class import Base
 
         # Configuración de Alembic
         config = context.config
@@ -413,6 +432,7 @@ def _create_alembic_env_template() -> FileTemplate:
         config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
         # Metadata para autogenerar migraciones
+        # Base.metadata contiene todos los modelos importados en base.py
         target_metadata = Base.metadata
 
 
@@ -426,7 +446,7 @@ def _create_alembic_env_template() -> FileTemplate:
                 url=url,
                 target_metadata=target_metadata,
                 literal_binds=True,
-                dialect_opts={{"paramstyle": "named"}},
+                dialect_opts={"paramstyle": "named"},
                 compare_type=True,
             )
 
@@ -453,23 +473,40 @@ def _create_alembic_env_template() -> FileTemplate:
             Ejecuta migraciones en modo async.
             '''
             connectable = async_engine_from_config(
-                config.get_section(config.config_ini_section, {{}}),
+                config.get_section(config.config_ini_section, {}),
                 prefix="sqlalchemy.",
                 poolclass=pool.NullPool,
             )
 
-            async with connectable.connect() as connection:
-                await connection.run_sync(do_run_migrations)
-
-            await connectable.dispose()
+            try:
+                async with connectable.connect() as connection:
+                    await connection.run_sync(do_run_migrations)
+            except Exception as e:
+                # Proporcionar mensaje de error más claro
+                url = config.get_main_option("sqlalchemy.url")
+                raise RuntimeError(
+                    f"Error conectando a la base de datos: {e}\n"
+                    f"URL de conexión: {url}\n"
+                    f"Asegúrate de que la base de datos esté corriendo y accesible."
+                ) from e
+            finally:
+                await connectable.dispose()
 
 
         def run_migrations_online() -> None:
             '''
             Run migrations in 'online' mode.
             Requiere conexión activa a la BD (modo async).
+            Manejo robusto del event loop para Windows.
             '''
-            asyncio.run(run_async_migrations())
+            # Crear un nuevo event loop explícitamente para evitar problemas en Windows
+            # cuando hay event loops existentes o cerrados
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(run_async_migrations())
+            finally:
+                loop.close()
 
 
         if context.is_offline_mode():
@@ -595,6 +632,18 @@ def _create_docker_compose_template() -> FileTemplate:
             build: .
             container_name: mi-api
             restart: unless-stopped
+            environment:
+              # Database - usar 'db' (nombre del servicio Docker)
+              DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/mi_api
+              # Redis - usar 'redis' (nombre del servicio Docker)
+              REDIS_URL: redis://redis:6379/0
+              REDIS_ENABLED: "true"
+              # Security
+              SECRET_KEY: your-secret-key-change-in-production-please-use-a-long-random-string
+              ALGORITHM: HS256
+              ACCESS_TOKEN_EXPIRE_MINUTES: 30
+              # CORS
+              CORS_ORIGINS: '["*"]'
             env_file:
               - .env
             ports:
