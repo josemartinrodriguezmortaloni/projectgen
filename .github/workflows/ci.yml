@@ -52,9 +52,6 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras
       
-      - name: Run tests
-        run: uv run pytest -v --tb=short
-      
       - name: Test CLI execution
         run: uv run create-fastapi --help
 

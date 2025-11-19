@@ -60,7 +60,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pyarchitect"
+name = "projectgen"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [

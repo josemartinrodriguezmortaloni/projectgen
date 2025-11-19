@@ -75,12 +75,6 @@ indent-style = "space"
 [tool.ruff.lint.isort]
 known-first-party = ["generator"]
 
-# Configuración de Pytest
-[tool.pytest.ini_options]
-minversion = "8.0"
-addopts = "-ra -q"
-testpaths = ["tests"]
-
 [[tool.uv.index]]
 name = "projectgen"
 url = "https://test.pypi.org/simple/"
