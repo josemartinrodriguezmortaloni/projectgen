@@ -485,8 +485,8 @@ async def run_async_migrations() -> None:
         # Provide clearer error message
         url = config.get_main_option("sqlalchemy.url")
         raise RuntimeError(
-            f"Error connecting to database: {e}\\n"
-            f"Connection URL: {url}\\n"
+            f"Error connecting to database: {e}\n"
+            f"Connection URL: {url}\n"
             f"Make sure the database is running and accessible."
         ) from e
     finally:

@@ -32,7 +32,7 @@ Issues = "https://github.com/yourusername/projectgen/issues"
 Changelog = "https://github.com/yourusername/projectgen/releases"
 
 [project.scripts]
-create-fastapi = "generator.cli:main"
+projectgen = "generator.cli:main"
 
 [project.optional-dependencies]
 dev = [
