@@ -1,5 +1,5 @@
 [project]
-name = "pyarchitect"
+name = "projectgen"
 version = "1.0.0"
 description = "Generador CLI de proyectos de Python con arquitectura limpia (SOLID + GoF + GRASP)"
 readme = "README.md"
@@ -8,7 +8,7 @@ license = {text = "MIT"}
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
 ]
-keywords = ["fastapi", "generator", "template", "cli", "architecture", "solid", "clean-code", "python"]
+keywords = ["fastapi", "generator", "template", "cli", "architecture", "solid", "clean-code", "python", "project-generator"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -25,11 +25,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/pyarchitect"
-Documentation = "https://github.com/yourusername/pyarchitect#readme"
-Repository = "https://github.com/yourusername/pyarchitect"
-Issues = "https://github.com/yourusername/pyarchitect/issues"
-Changelog = "https://github.com/yourusername/pyarchitect/releases"
+Homepage = "https://github.com/yourusername/projectgen"
+Documentation = "https://github.com/yourusername/projectgen#readme"
+Repository = "https://github.com/yourusername/projectgen"
+Issues = "https://github.com/yourusername/projectgen/issues"
+Changelog = "https://github.com/yourusername/projectgen/releases"
 
 [project.scripts]
 create-fastapi = "generator.cli:main"
@@ -82,7 +82,7 @@ addopts = "-ra -q"
 testpaths = ["tests"]
 
 [[tool.uv.index]]
-name = "pyarchitect"
+name = "projectgen"
 url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true

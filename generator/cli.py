@@ -25,7 +25,7 @@ class CLI:
     Controller (GRASP): Coordina flujo sin hacer trabajo pesado.
     Facade (GoF): Simplifica acceso a subsistemas (validator, creator).
     Single Responsibility (SOLID): Solo maneja interfaz CLI.
-    
+
     Responsabilidades:
     - Parsear argumentos
     - Mostrar UI con Rich
@@ -43,7 +43,7 @@ class CLI:
     def _create_parser(self) -> argparse.ArgumentParser:
         """
         Information Expert (GRASP): Conoce estructura de args.
-        
+
         Returns:
             ArgumentParser configurado.
         """
@@ -51,51 +51,43 @@ class CLI:
             description="🚀 Generador de proyectos FastAPI con arquitectura limpia",
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog="Ejemplo: python -m template-proyects mi-api --hash-algo argon2\n"
-                   "         python -m template-proyects  # Modo interactivo completo"
+            "         python -m template-proyects  # Modo interactivo completo",
         )
 
         parser.add_argument(
             "project_name",
             nargs="?",  # Make optional
-            help="Nombre del proyecto (ej: mi-api, backend-service). Si no se provee, se preguntará interactivamente"
+            help="Nombre del proyecto (ej: mi-api, backend-service). Si no se provee, se preguntará interactivamente",
         )
 
         parser.add_argument(
             "--output-dir",
             type=Path,
             default=Path.cwd(),
-            help="Directorio donde crear el proyecto (default: directorio actual)"
+            help="Directorio donde crear el proyecto (default: directorio actual)",
         )
 
         parser.add_argument(
-            "--overwrite",
-            action="store_true",
-            help="Sobrescribir proyecto existente"
+            "--overwrite", action="store_true", help="Sobrescribir proyecto existente"
         )
 
         parser.add_argument(
-            "--no-docker",
-            action="store_true",
-            help="No generar Dockerfile ni docker-compose.yml"
+            "--no-docker", action="store_true", help="No generar Dockerfile ni docker-compose.yml"
         )
 
-        parser.add_argument(
-            "--no-tests",
-            action="store_true",
-            help="No generar directorio tests/"
-        )
+        parser.add_argument("--no-tests", action="store_true", help="No generar directorio tests/")
 
         parser.add_argument(
             "--no-cicd",
             action="store_true",
-            help="No generar archivos de CI/CD (.github/workflows/)"
+            help="No generar archivos de CI/CD (.github/workflows/)",
         )
 
         parser.add_argument(
             "--hash-algo",
             choices=["bcrypt", "argon2"],
             default="argon2",
-            help="Algoritmo de hash de passwords (default: argon2)"
+            help="Algoritmo de hash de passwords (default: argon2)",
         )
 
         return parser
@@ -103,10 +95,10 @@ class CLI:
     def run(self, args: list[str] | None = None) -> int:
         """
         Template Method (GoF): Flujo fijo del CLI.
-        
+
         Args:
             args: Argumentos de línea de comandos (None = sys.argv).
-            
+
         Returns:
             Exit code (0 = success, 1 = error, 130 = cancelled).
         """
@@ -143,22 +135,24 @@ class CLI:
         Rich UI: Header con panel.
         """
         console.print()
-        console.print(Panel.fit(
-            "[bold cyan]FastAPI Template Generator[/bold cyan]\n"
-            "[dim]Arquitectura limpia con SOLID + GoF + GRASP[/dim]\n"
-            "[dim]FastAPI 0.115+ | PostgreSQL 16 | SQLAlchemy 2.0 async[/dim]",
-            border_style="cyan",
-            box=box.DOUBLE
-        ))
+        console.print(
+            Panel.fit(
+                "[bold cyan]FastAPI Template Generator[/bold cyan]\n"
+                "[dim]Arquitectura limpia con SOLID + GoF + GRASP[/dim]\n"
+                "[dim]FastAPI 0.115+ | PostgreSQL 16 | SQLAlchemy 2.0 async[/dim]",
+                border_style="cyan",
+                box=box.DOUBLE,
+            )
+        )
         console.print()
 
     def _validate(self, args: argparse.Namespace) -> None:
         """
         Delega validación a cadena de validadores.
-        
+
         Args:
             args: Argumentos parseados.
-            
+
         Raises:
             ValidationError: Si alguna validación falla.
         """
@@ -172,10 +166,10 @@ class CLI:
         """
         Prompts user for all configuration options interactively.
         Pattern: Template Method - defines fixed sequence of prompts
-        
+
         Args:
             args: Initial arguments (may have some values pre-filled from CLI)
-            
+
         Returns:
             Updated namespace with user's choices
         """
@@ -183,37 +177,30 @@ class CLI:
 
         # Project name (if not provided via CLI)
         if not args.project_name:
-            args.project_name = Prompt.ask(
-                "  [cyan]Nombre del proyecto[/cyan]",
-                default="my-api"
-            )
+            args.project_name = Prompt.ask("  [cyan]Nombre del proyecto[/cyan]", default="my-api")
 
         # Output directory (always prompt unless explicitly set via CLI)
         if args.output_dir == Path.cwd():  # Default value, not explicitly set
             output_dir_str = Prompt.ask(
-                "  [cyan]Directorio donde crear el proyecto[/cyan]",
-                default=str(Path.cwd())
+                "  [cyan]Directorio donde crear el proyecto[/cyan]", default=str(Path.cwd())
             )
             args.output_dir = Path(output_dir_str).expanduser().resolve()
 
         # Docker
         include_docker = Confirm.ask(
-            "  [cyan]¿Incluir Docker y docker-compose?[/cyan]",
-            default=not args.no_docker
+            "  [cyan]¿Incluir Docker y docker-compose?[/cyan]", default=not args.no_docker
         )
         args.no_docker = not include_docker
 
         # Tests
         include_tests = Confirm.ask(
-            "  [cyan]¿Incluir directorio de tests?[/cyan]",
-            default=not args.no_tests
+            "  [cyan]¿Incluir directorio de tests?[/cyan]", default=not args.no_tests
         )
         args.no_tests = not include_tests
 
         # CI/CD
         include_cicd = Confirm.ask(
-            "  [cyan]¿Incluir GitHub Actions CI/CD?[/cyan]",
-            default=not args.no_cicd
+            "  [cyan]¿Incluir GitHub Actions CI/CD?[/cyan]", default=not args.no_cicd
         )
         args.no_cicd = not include_cicd
 
@@ -221,7 +208,7 @@ class CLI:
         args.hash_algo = Prompt.ask(
             "  [cyan]Algoritmo de hash para passwords[/cyan]",
             choices=["argon2", "bcrypt"],
-            default=args.hash_algo
+            default=args.hash_algo,
         )
 
         console.print()
@@ -231,13 +218,13 @@ class CLI:
         """
         Rich UI: Muestra resumen y permite reconfigurar.
         Pattern: Template Method with loop for reconfiguration
-        
+
         Args:
             args: Argumentos parseados.
-            
+
         Returns:
             Confirmed (possibly modified) arguments.
-            
+
         Raises:
             KeyboardInterrupt: Si usuario cancela definitivamente.
         """
@@ -247,7 +234,7 @@ class CLI:
                 title="⚙️  Configuración del proyecto",
                 show_header=False,
                 box=box.ROUNDED,
-                border_style="blue"
+                border_style="blue",
             )
             table.add_column("Opción", style="cyan bold", width=20)
             table.add_column("Valor", style="green")
@@ -269,10 +256,7 @@ class CLI:
 
             # Si rechaza, preguntar si quiere reconfigurar
             console.print()
-            if Confirm.ask(
-                "[yellow]¿Deseas modificar la configuración?[/yellow]",
-                default=True
-            ):
+            if Confirm.ask("[yellow]¿Deseas modificar la configuración?[/yellow]", default=True):
                 console.print()
                 # Preserve project_name but allow re-prompting for everything
                 args = self._get_interactive_config(args)
@@ -282,7 +266,7 @@ class CLI:
     def _create_project(self, args: argparse.Namespace) -> None:
         """
         Delega creación a ProjectCreator con Rich progress.
-        
+
         Args:
             args: Argumentos parseados.
         """
@@ -309,16 +293,13 @@ class CLI:
             console=console,
             transient=False,
         ) as progress:
-            task_id = progress.add_task(
-                "[cyan]Generando proyecto...",
-                total=100
-            )
+            task_id = progress.add_task("[cyan]Generando proyecto...", total=100)
             creator.create(progress, task_id)
 
     def _show_success(self, args: argparse.Namespace) -> None:
         """
         Rich UI: Árbol de estructura + comandos siguientes.
-        
+
         Args:
             args: Argumentos parseados.
         """
@@ -326,10 +307,7 @@ class CLI:
         console.print("[bold green]✓ ¡Proyecto creado exitosamente![/bold green]\n")
 
         # Árbol de estructura
-        tree = Tree(
-            f"📁 [bold cyan]{args.project_name}[/bold cyan]",
-            guide_style="bright_blue"
-        )
+        tree = Tree(f"📁 [bold cyan]{args.project_name}[/bold cyan]", guide_style="bright_blue")
 
         app_node = tree.add("📁 [bold]app[/bold] - Código de la aplicación")
         app_node.add("📄 main.py - Entry point FastAPI")
@@ -358,23 +336,25 @@ class CLI:
         console.print()
 
         # Panel con comandos siguientes
-        console.print(Panel(
-            f"[bold white]Siguientes pasos:[/bold white]\n\n"
-            f"[cyan]1.[/cyan] cd {args.project_name}\n"
-            f"[cyan]2.[/cyan] uv sync                    [dim]# Instalar dependencias[/dim]\n"
-            f"[cyan]3.[/cyan] docker-compose up -d       [dim]# Levantar Postgres + Redis[/dim]\n"
-            f"[cyan]4.[/cyan] alembic upgrade head        [dim]# Ejecutar migraciones[/dim]\n"
-            f"[cyan]5.[/cyan] uv run uvicorn app.main:app --reload\n\n"
-            f"[bold green]API disponible en:[/bold green] "
-            f"[link=http://localhost:8000]http://localhost:8000[/link]\n"
-            f"[bold green]Docs interactivos:[/bold green] "
-            f"[link=http://localhost:8000/docs]http://localhost:8000/docs[/link]\n"
-            f"[bold green]ReDoc:[/bold green] "
-            f"[link=http://localhost:8000/redoc]http://localhost:8000/redoc[/link]",
-            title="🚀 [bold]¡Listo para desarrollar![/bold]",
-            border_style="green",
-            box=box.DOUBLE
-        ))
+        console.print(
+            Panel(
+                f"[bold white]Siguientes pasos:[/bold white]\n\n"
+                f"[cyan]1.[/cyan] cd {args.project_name}\n"
+                f"[cyan]2.[/cyan] uv sync                    [dim]# Instalar dependencias[/dim]\n"
+                f"[cyan]3.[/cyan] docker-compose up -d       [dim]# Levantar Postgres + Redis[/dim]\n"
+                f"[cyan]4.[/cyan] alembic upgrade head        [dim]# Ejecutar migraciones[/dim]\n"
+                f"[cyan]5.[/cyan] uv run uvicorn app.main:app --reload\n\n"
+                f"[bold green]API disponible en:[/bold green] "
+                f"[link=http://localhost:8000]http://localhost:8000[/link]\n"
+                f"[bold green]Docs interactivos:[/bold green] "
+                f"[link=http://localhost:8000/docs]http://localhost:8000/docs[/link]\n"
+                f"[bold green]ReDoc:[/bold green] "
+                f"[link=http://localhost:8000/redoc]http://localhost:8000/redoc[/link]",
+                title="🚀 [bold]¡Listo para desarrollar![/bold]",
+                border_style="green",
+                box=box.DOUBLE,
+            )
+        )
 
 
 def main() -> None:
@@ -383,4 +363,3 @@ def main() -> None:
     """
     cli = CLI()
     exit(cli.run())
-

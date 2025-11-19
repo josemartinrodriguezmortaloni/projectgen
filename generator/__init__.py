@@ -4,4 +4,3 @@ Generador de proyectos FastAPI con arquitectura limpia aplicando SOLID, GoF y GR
 """
 
 __version__ = "1.0.0"
-

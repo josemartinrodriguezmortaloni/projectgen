@@ -9,40 +9,47 @@ from generator.templates.base import FileTemplate, dedent
 def get_test_templates() -> list[FileTemplate]:
     """
     Factory Method (GoF): Crea conjunto de templates para tests/.
-    
+
     Returns:
         Lista de FileTemplate con archivos de testing.
     """
     return [
         # Root tests/
-        FileTemplate("tests/__init__.py", dedent("""
+        FileTemplate(
+            "tests/__init__.py",
+            dedent("""
             # Paquete de tests.
-        """)),
-
+        """),
+        ),
         _create_conftest_template(),
-
         # tests/unit/
-        FileTemplate("tests/unit/__init__.py", dedent("""
+        FileTemplate(
+            "tests/unit/__init__.py",
+            dedent("""
             # Tests unitarios.
-        """)),
-
+        """),
+        ),
         _create_unit_test_services_template(),
         _create_unit_test_repositories_template(),
-
         # tests/integration/
-        FileTemplate("tests/integration/__init__.py", dedent("""
+        FileTemplate(
+            "tests/integration/__init__.py",
+            dedent("""
             # Tests de integración.
-        """)),
-
+        """),
+        ),
         _create_integration_test_users_endpoint_template(),
     ]
 
 
 # ==================== conftest.py ====================
 
+
 def _create_conftest_template() -> FileTemplate:
     """Fixtures compartidos para tests async."""
-    return FileTemplate("tests/conftest.py", dedent("""
+    return FileTemplate(
+        "tests/conftest.py",
+        dedent("""
         import asyncio
         from typing import AsyncGenerator, Generator
 
@@ -80,15 +87,15 @@ def _create_conftest_template() -> FileTemplate:
                 echo=False,
                 future=True,
             )
-            
+
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
-            
+
             yield engine
-            
+
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.drop_all)
-            
+
             await engine.dispose()
 
 
@@ -102,7 +109,7 @@ def _create_conftest_template() -> FileTemplate:
                 class_=AsyncSession,
                 expire_on_commit=False,
             )
-            
+
             async with async_session() as session:
                 yield session
 
@@ -115,24 +122,28 @@ def _create_conftest_template() -> FileTemplate:
             '''
             async def override_get_db():
                 yield db_session
-            
+
             app.dependency_overrides[get_db] = override_get_db
-            
+
             async with AsyncClient(
                 transport=ASGITransport(app=app),
                 base_url="http://test"
             ) as ac:
                 yield ac
-            
+
             app.dependency_overrides.clear()
-    """))
+    """),
+    )
 
 
 # ==================== tests/unit/ ====================
 
+
 def _create_unit_test_services_template() -> FileTemplate:
     """Tests unitarios para services con mocks."""
-    return FileTemplate("tests/unit/test_services.py", dedent("""
+    return FileTemplate(
+        "tests/unit/test_services.py",
+        dedent("""
         from unittest.mock import AsyncMock, MagicMock
 
         import pytest
@@ -165,7 +176,7 @@ def _create_unit_test_services_template() -> FileTemplate:
 
         class TestUserServiceGetAll:
             '''Tests para UserService.get_all()'''
-            
+
             @pytest.mark.asyncio
             async def test_get_all_without_cache(self, user_service, mock_repository, mock_cache):
                 '''Test get_all cuando no hay cache'''
@@ -176,17 +187,17 @@ def _create_unit_test_services_template() -> FileTemplate:
                 ]
                 mock_repository.get_all.return_value = mock_users
                 mock_cache.get.return_value = None
-                
+
                 # Act
                 result = await user_service.get_all(skip=0, limit=10)
-                
+
                 # Assert
                 assert len(result) == 2
                 assert result[0].id == 1
                 assert result[1].id == 2
                 mock_repository.get_all.assert_called_once_with(0, 10)
                 mock_cache.set.assert_called_once()
-            
+
             @pytest.mark.asyncio
             async def test_get_all_with_cache(self, user_service, mock_repository, mock_cache):
                 '''Test get_all cuando hay cache hit'''
@@ -195,10 +206,10 @@ def _create_unit_test_services_template() -> FileTemplate:
                     {{"id": 1, "email": "user1@example.com", "name": "User 1", "is_active": True}},
                 ]
                 mock_cache.get.return_value = cached_data
-                
+
                 # Act
                 result = await user_service.get_all()
-                
+
                 # Assert
                 assert len(result) == 1
                 assert result[0].id == 1
@@ -207,7 +218,7 @@ def _create_unit_test_services_template() -> FileTemplate:
 
         class TestUserServiceGetById:
             '''Tests para UserService.get_by_id()'''
-            
+
             @pytest.mark.asyncio
             async def test_get_by_id_found(self, user_service, mock_repository):
                 '''Test get_by_id cuando el usuario existe'''
@@ -219,21 +230,21 @@ def _create_unit_test_services_template() -> FileTemplate:
                     hashed_password="hash"
                 )
                 mock_repository.get_by_id.return_value = mock_user
-                
+
                 # Act
                 result = await user_service.get_by_id(1)
-                
+
                 # Assert
                 assert result.id == 1
                 assert result.email == "test@example.com"
                 mock_repository.get_by_id.assert_called_once_with(1)
-            
+
             @pytest.mark.asyncio
             async def test_get_by_id_not_found(self, user_service, mock_repository):
                 '''Test get_by_id cuando el usuario no existe'''
                 # Arrange
                 mock_repository.get_by_id.return_value = None
-                
+
                 # Act & Assert
                 with pytest.raises(InstanceNotFoundError, match="User with id 999 not found"):
                     await user_service.get_by_id(999)
@@ -241,7 +252,7 @@ def _create_unit_test_services_template() -> FileTemplate:
 
         class TestUserServiceCreate:
             '''Tests para UserService.create()'''
-            
+
             @pytest.mark.asyncio
             async def test_create_success(self, user_service, mock_repository):
                 '''Test create cuando todo es válido'''
@@ -258,16 +269,16 @@ def _create_unit_test_services_template() -> FileTemplate:
                     name=user_data.name,
                     hashed_password="hashed"
                 )
-                
+
                 # Act
                 result = await user_service.create(user_data)
-                
+
                 # Assert
                 assert result.id == 1
                 assert result.email == "new@example.com"
                 mock_repository.email_exists.assert_called_once_with("new@example.com")
                 mock_repository.create.assert_called_once()
-            
+
             @pytest.mark.asyncio
             async def test_create_duplicate_email(self, user_service, mock_repository):
                 '''Test create cuando el email ya existe'''
@@ -278,11 +289,11 @@ def _create_unit_test_services_template() -> FileTemplate:
                     password="password123"
                 )
                 mock_repository.email_exists.return_value = True
-                
+
                 # Act & Assert
                 with pytest.raises(DuplicateEmailError):
                     await user_service.create(user_data)
-            
+
             @pytest.mark.asyncio
             async def test_create_short_password(self, user_service, mock_repository):
                 '''Test create cuando el password es muy corto'''
@@ -293,16 +304,19 @@ def _create_unit_test_services_template() -> FileTemplate:
                     password="short"
                 )
                 mock_repository.email_exists.return_value = False
-                
+
                 # Act & Assert
                 with pytest.raises(ValidationError, match="Password must be at least 8 characters"):
                     await user_service.create(user_data)
-    """))
+    """),
+    )
 
 
 def _create_unit_test_repositories_template() -> FileTemplate:
     """Tests unitarios para repositories."""
-    return FileTemplate("tests/unit/test_repositories.py", dedent("""
+    return FileTemplate(
+        "tests/unit/test_repositories.py",
+        dedent("""
         import pytest
 
         from app.models.user import User
@@ -319,10 +333,10 @@ def _create_unit_test_repositories_template() -> FileTemplate:
                 name="Test User",
                 hashed_password="hashedpassword123"
             )
-            
+
             # Act
             created_user = await repository.create(user)
-            
+
             # Assert
             assert created_user.id is not None
             assert created_user.email == "test@example.com"
@@ -340,10 +354,10 @@ def _create_unit_test_repositories_template() -> FileTemplate:
                 hashed_password="hashedpassword123"
             )
             created_user = await repository.create(user)
-            
+
             # Act
             found_user = await repository.get_by_id(created_user.id)
-            
+
             # Assert
             assert found_user is not None
             assert found_user.id == created_user.id
@@ -361,10 +375,10 @@ def _create_unit_test_repositories_template() -> FileTemplate:
                 hashed_password="hashedpassword123"
             )
             await repository.create(user)
-            
+
             # Act
             found_user = await repository.get_by_email("unique@example.com")
-            
+
             # Assert
             assert found_user is not None
             assert found_user.email == "unique@example.com"
@@ -381,7 +395,7 @@ def _create_unit_test_repositories_template() -> FileTemplate:
                 hashed_password="hashedpassword123"
             )
             await repository.create(user)
-            
+
             # Act & Assert
             assert await repository.email_exists("exists@example.com") is True
             assert await repository.email_exists("notexists@example.com") is False
@@ -399,20 +413,24 @@ def _create_unit_test_repositories_template() -> FileTemplate:
                     hashed_password="hashedpassword123"
                 )
                 await repository.create(user)
-            
+
             # Act
             users = await repository.get_all(skip=0, limit=3)
-            
+
             # Assert
             assert len(users) == 3
-    """))
+    """),
+    )
 
 
 # ==================== tests/integration/ ====================
 
+
 def _create_integration_test_users_endpoint_template() -> FileTemplate:
     """Tests E2E para endpoints de users."""
-    return FileTemplate("tests/integration/test_users_endpoint.py", dedent("""
+    return FileTemplate(
+        "tests/integration/test_users_endpoint.py",
+        dedent("""
         import pytest
         from httpx import AsyncClient
 
@@ -426,10 +444,10 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
                 "name": "New User",
                 "password": "securepassword123"
             }}
-            
+
             # Act
             response = await client.post("/api/v1/users/", json=user_data)
-            
+
             # Assert
             assert response.status_code == 201
             data = response.json()
@@ -449,10 +467,10 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
                     "name": f"User {{i}}",
                     "password": "password123"
                 }})
-            
+
             # Act
             response = await client.get("/api/v1/users/")
-            
+
             # Assert
             assert response.status_code == 200
             data = response.json()
@@ -469,10 +487,10 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
                 "password": "password123"
             }})
             user_id = create_response.json()["id"]
-            
+
             # Act
             response = await client.get(f"/api/v1/users/{{user_id}}")
-            
+
             # Assert
             assert response.status_code == 200
             data = response.json()
@@ -485,7 +503,7 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
             '''Test E2E: Obtener usuario inexistente'''
             # Act
             response = await client.get("/api/v1/users/99999")
-            
+
             # Assert
             assert response.status_code == 404
 
@@ -500,11 +518,11 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
                 "password": "password123"
             }})
             user_id = create_response.json()["id"]
-            
+
             # Act
             update_data = {{"name": "Updated Name"}}
             response = await client.put(f"/api/v1/users/{{user_id}}", json=update_data)
-            
+
             # Assert
             assert response.status_code == 200
             data = response.json()
@@ -522,13 +540,13 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
                 "password": "password123"
             }})
             user_id = create_response.json()["id"]
-            
+
             # Act
             response = await client.delete(f"/api/v1/users/{{user_id}}")
-            
+
             # Assert
             assert response.status_code == 204
-            
+
             # Verificar que ya no existe
             get_response = await client.get(f"/api/v1/users/{{user_id}}")
             assert get_response.status_code == 404
@@ -544,10 +562,10 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
                 "password": "password123"
             }}
             await client.post("/api/v1/users/", json=user_data)
-            
+
             # Act - Intentar crear otro con mismo email
             response = await client.post("/api/v1/users/", json=user_data)
-            
+
             # Assert
             assert response.status_code == 400
             assert "already exists" in response.json()["detail"]
@@ -562,12 +580,12 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
                 "name": "Test User",
                 "password": "short"
             }}
-            
+
             # Act
             response = await client.post("/api/v1/users/", json=user_data)
-            
+
             # Assert
             assert response.status_code == 400
             assert "at least 8 characters" in response.json()["detail"]
-    """))
-
+    """),
+    )

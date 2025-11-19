@@ -10,119 +10,137 @@ def get_app_templates(project_name: str, hash_algo: str) -> list[FileTemplate]:
     """
     Factory Method (GoF): Crea conjunto de templates para app/.
     Open/Closed (SOLID): Agregar nuevos templates sin modificar esta función.
-    
+
     Args:
         project_name: Nombre del proyecto.
         hash_algo: Algoritmo de hash ("bcrypt" o "argon2").
-        
+
     Returns:
         Lista de FileTemplate con todos los archivos de app/.
     """
     return [
         # Root app/
-        FileTemplate("app/__init__.py", dedent("""
+        FileTemplate(
+            "app/__init__.py",
+            dedent("""
             # Paquete principal de la aplicación FastAPI.
-        """)),
-
+        """),
+        ),
         _create_main_template(),
-
         # app/core/
-        FileTemplate("app/core/__init__.py", dedent("""
+        FileTemplate(
+            "app/core/__init__.py",
+            dedent("""
             # Núcleo de la aplicación: configuración, seguridad, eventos, excepciones.
-        """)),
-
+        """),
+        ),
         _create_config_template(project_name),
         _create_security_template(hash_algo),
         _create_events_template(),
         _create_exceptions_template(),
-
         # app/db/
-        FileTemplate("app/db/__init__.py", dedent("""
+        FileTemplate(
+            "app/db/__init__.py",
+            dedent("""
             # Capa de acceso a base de datos.
-        """)),
-
+        """),
+        ),
         _create_db_session_template(),
         _create_db_base_template(),
-
         # app/models/
-        FileTemplate("app/models/__init__.py", dedent("""
+        FileTemplate(
+            "app/models/__init__.py",
+            dedent("""
             # Modelos SQLAlchemy (representan tablas de BD).
-        """)),
-
+        """),
+        ),
         _create_user_model_template(),
         _create_product_model_template(),
         _create_order_model_template(),
-
         # app/schemas/
-        FileTemplate("app/schemas/__init__.py", dedent("""
+        FileTemplate(
+            "app/schemas/__init__.py",
+            dedent("""
             # Schemas Pydantic v2 (validan y serializan datos HTTP).
-        """)),
-
+        """),
+        ),
         _create_user_schema_template(),
         _create_product_schema_template(),
         _create_order_schema_template(),
-
         # app/repositories/
-        FileTemplate("app/repositories/__init__.py", dedent("""
+        FileTemplate(
+            "app/repositories/__init__.py",
+            dedent("""
             # Patrón Repository: abstrae acceso a datos.
             # Solo queries, sin lógica de negocio.
-        """)),
-
+        """),
+        ),
         _create_base_repository_template(),
         _create_user_repository_template(),
         _create_product_repository_template(),
         _create_order_repository_template(),
-
         # app/services/
-        FileTemplate("app/services/__init__.py", dedent("""
+        FileTemplate(
+            "app/services/__init__.py",
+            dedent("""
             # Service Layer: lógica de negocio.
             # Valida, coordina repositorios, dispara eventos.
-        """)),
-
+        """),
+        ),
         _create_cache_service_template(),
         _create_user_service_template(),
         _create_product_service_template(),
         _create_order_service_template(),
-
         # app/factories/
-        FileTemplate("app/factories/__init__.py", dedent("""
+        FileTemplate(
+            "app/factories/__init__.py",
+            dedent("""
             # Factory Pattern: creación de servicios con dependencias.
-        """)),
-
+        """),
+        ),
         _create_service_factory_template(),
-
         # app/utils/
-        FileTemplate("app/utils/__init__.py", dedent("""
+        FileTemplate(
+            "app/utils/__init__.py",
+            dedent("""
             # Utilidades generales reutilizables.
-        """)),
-
-        FileTemplate("app/utils/validators.py", dedent("""
+        """),
+        ),
+        FileTemplate(
+            "app/utils/validators.py",
+            dedent("""
             # Validadores de negocio reutilizables.
-        """)),
-
-        FileTemplate("app/utils/helpers.py", dedent("""
+        """),
+        ),
+        FileTemplate(
+            "app/utils/helpers.py",
+            dedent("""
             # Helper functions reutilizables.
-        """)),
-
+        """),
+        ),
         # app/api/
-        FileTemplate("app/api/__init__.py", dedent("""
+        FileTemplate(
+            "app/api/__init__.py",
+            dedent("""
             # Capa de presentación HTTP (endpoints).
-        """)),
-
+        """),
+        ),
         _create_dependencies_template(),
-
         # app/api/v1/
-        FileTemplate("app/api/v1/__init__.py", dedent("""
+        FileTemplate(
+            "app/api/v1/__init__.py",
+            dedent("""
             # API versión 1.
-        """)),
-
+        """),
+        ),
         _create_api_router_template(),
-
         # app/api/v1/endpoints/
-        FileTemplate("app/api/v1/endpoints/__init__.py", dedent("""
+        FileTemplate(
+            "app/api/v1/endpoints/__init__.py",
+            dedent("""
             # Endpoints CRUD agrupados por recurso.
-        """)),
-
+        """),
+        ),
         _create_users_endpoint_template(),
         _create_products_endpoint_template(),
         _create_orders_endpoint_template(),
@@ -131,9 +149,12 @@ def get_app_templates(project_name: str, hash_algo: str) -> list[FileTemplate]:
 
 # ==================== app/main.py ====================
 
+
 def _create_main_template() -> FileTemplate:
     """Entry point de FastAPI con lifespan events."""
-    return FileTemplate("app/main.py", dedent("""
+    return FileTemplate(
+        "app/main.py",
+        dedent("""
         from contextlib import asynccontextmanager
 
         from fastapi import FastAPI
@@ -184,14 +205,18 @@ def _create_main_template() -> FileTemplate:
 
 
         app = create_app()
-    """))
+    """),
+    )
 
 
 # ==================== app/core/ ====================
 
+
 def _create_config_template(project_name: str) -> FileTemplate:
     """Singleton para configuración con pydantic-settings."""
-    return FileTemplate("app/core/config.py", dedent(f"""
+    return FileTemplate(
+        "app/core/config.py",
+        dedent(f"""
         from functools import lru_cache
 
         from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -202,33 +227,33 @@ def _create_config_template(project_name: str) -> FileTemplate:
             Singleton (GoF): Una sola instancia via lru_cache.
             Single Responsibility (SOLID): Solo maneja configuración.
             Information Expert (GRASP): Conoce toda la configuración de la app.
-            
+
             Uso:
                 from app.core.config import settings
                 print(settings.DATABASE_URL)
             '''
-            
+
             # App
             PROJECT_NAME: str = "{project_name}"
             VERSION: str = "1.0.0"
-            
+
             # Database
             DATABASE_URL: str
             DB_POOL_SIZE: int = 50
             DB_MAX_OVERFLOW: int = 100
-            
+
             # Redis
             REDIS_URL: str
             REDIS_ENABLED: bool = True
-            
+
             # Security
             SECRET_KEY: str
             ALGORITHM: str = "HS256"
             ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-            
+
             # CORS
             CORS_ORIGINS: list[str] = ["*"]
-            
+
             model_config = SettingsConfigDict(
                 env_file=".env",
                 case_sensitive=True,
@@ -247,14 +272,17 @@ def _create_config_template(project_name: str) -> FileTemplate:
 
         # Instancia global
         settings = get_settings()
-    """))
+    """),
+    )
 
 
 def _create_security_template(hash_algo: str) -> FileTemplate:
     """Strategy pattern para hash de passwords + JWT."""
     default_hasher = "Argon2Hasher" if hash_algo == "argon2" else "BcryptHasher"
 
-    return FileTemplate("app/core/security.py", dedent(f"""
+    return FileTemplate(
+        "app/core/security.py",
+        dedent(f"""
         from abc import ABC, abstractmethod
         from datetime import datetime, timedelta, timezone
         from typing import Any
@@ -269,15 +297,15 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
             '''
             Strategy (GoF): Define familia de algoritmos de hash.
             Open/Closed (SOLID): Agregar nuevas estrategias sin modificar código.
-            
+
             Permite cambiar entre bcrypt y argon2 fácilmente.
             '''
-            
+
             @abstractmethod
             def hash(self, password: str) -> str:
                 '''Hashea password'''
                 pass
-            
+
             @abstractmethod
             def verify(self, plain_password: str, hashed_password: str) -> bool:
                 '''Verifica password'''
@@ -289,16 +317,16 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
             Concrete Strategy: Bcrypt.
             Balance entre seguridad y performance.
             '''
-            
+
             def __init__(self) -> None:
                 self._pwd_context = CryptContext(
                     schemes=["bcrypt"],
                     deprecated="auto"
                 )
-            
+
             def hash(self, password: str) -> str:
                 return self._pwd_context.hash(password)
-            
+
             def verify(self, plain_password: str, hashed_password: str) -> bool:
                 return self._pwd_context.verify(plain_password, hashed_password)
 
@@ -308,16 +336,16 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
             Concrete Strategy: Argon2.
             Más seguro, recomendado para nuevos proyectos.
             '''
-            
+
             def __init__(self) -> None:
                 self._pwd_context = CryptContext(
                     schemes=["argon2"],
                     deprecated="auto"
                 )
-            
+
             def hash(self, password: str) -> str:
                 return self._pwd_context.hash(password)
-            
+
             def verify(self, plain_password: str, hashed_password: str) -> bool:
                 return self._pwd_context.verify(plain_password, hashed_password)
 
@@ -328,18 +356,18 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
             Information Expert (GRASP): Experto en operaciones de seguridad.
             Single Responsibility (SOLID): Solo maneja hash y JWT.
             '''
-            
+
             def __init__(self, hasher: PasswordHasher) -> None:
                 self._hasher = hasher
-            
+
             def hash_password(self, password: str) -> str:
                 '''Hashea password usando estrategia configurada'''
                 return self._hasher.hash(password)
-            
+
             def verify_password(self, plain_password: str, hashed_password: str) -> bool:
                 '''Verifica password usando estrategia configurada'''
                 return self._hasher.verify(plain_password, hashed_password)
-            
+
             def create_access_token(
                 self,
                 data: dict[str, Any],
@@ -347,20 +375,20 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
             ) -> str:
                 '''
                 Crea JWT access token.
-                
+
                 Args:
                     data: Payload del token (ej: {{"sub": "user_id"}})
                     expires_delta: Tiempo de expiración custom
                 '''
                 to_encode = data.copy()
-                
+
                 if expires_delta:
                     expire = datetime.now(timezone.utc) + expires_delta
                 else:
                     expire = datetime.now(timezone.utc) + timedelta(
                         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
                     )
-                
+
                 to_encode.update({{"exp": expire}})
                 encoded_jwt = jwt.encode(
                     to_encode,
@@ -368,7 +396,7 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
                     algorithm=settings.ALGORITHM
                 )
                 return encoded_jwt
-            
+
             def decode_token(self, token: str) -> dict[str, Any]:
                 '''Decodifica y valida JWT token'''
                 return jwt.decode(
@@ -383,12 +411,15 @@ def _create_security_template(hash_algo: str) -> FileTemplate:
 
         # Para cambiar estrategia:
         # security = SecurityService(BcryptHasher())
-    """))
+    """),
+    )
 
 
 def _create_events_template() -> FileTemplate:
     """Observer pattern para sistema de eventos async."""
-    return FileTemplate("app/core/events.py", dedent("""
+    return FileTemplate(
+        "app/core/events.py",
+        dedent("""
         from enum import Enum
         from typing import Callable
 
@@ -400,11 +431,11 @@ def _create_events_template() -> FileTemplate:
             USER_CREATED = "user.created"
             USER_UPDATED = "user.updated"
             USER_DELETED = "user.deleted"
-            
+
             ORDER_CREATED = "order.created"
             ORDER_COMPLETED = "order.completed"
             ORDER_CANCELLED = "order.cancelled"
-            
+
             PRODUCT_OUT_OF_STOCK = "product.out_of_stock"
             PRODUCT_LOW_STOCK = "product.low_stock"
 
@@ -413,7 +444,7 @@ def _create_events_template() -> FileTemplate:
             '''
             Representa un evento del sistema.
             '''
-            
+
             def __init__(self, event_type: EventType, data: dict) -> None:
                 self.type = event_type
                 self.data = data
@@ -424,29 +455,29 @@ def _create_events_template() -> FileTemplate:
             Observer (GoF): Subject que notifica a observers.
             Single Responsibility (SOLID): Solo maneja eventos.
             Controller (GRASP): Coordina flujo de eventos.
-            
+
             Uso:
                 from app.core.events import event_dispatcher, EventType, Event
-                
+
                 async def handle_user_created(event: Event):
                     print(f"Usuario creado: {{event.data}}")
-                
+
                 event_dispatcher.subscribe(EventType.USER_CREATED, handle_user_created)
                 await event_dispatcher.dispatch(Event(EventType.USER_CREATED, {{"id": 1}}))
             '''
-            
+
             def __init__(self) -> None:
                 self._listeners: dict[EventType, list[Callable]] = {{}}
-            
+
             def subscribe(self, event_type: EventType, listener: Callable) -> None:
                 '''
                 Suscribe un listener a un tipo de evento.
                 '''
                 if event_type not in self._listeners:
                     self._listeners[event_type] = []
-                
+
                 self._listeners[event_type].append(listener)
-            
+
             def unsubscribe(self, event_type: EventType, listener: Callable) -> None:
                 '''
                 Desuscribe un listener.
@@ -456,14 +487,14 @@ def _create_events_template() -> FileTemplate:
                         self._listeners[event_type].remove(listener)
                     except ValueError:
                         pass
-            
+
             async def dispatch(self, event: Event) -> None:
                 '''
                 Dispara un evento a todos los listeners suscritos.
                 '''
                 if event.type not in self._listeners:
                     return
-                
+
                 for listener in self._listeners[event.type]:
                     try:
                         if callable(listener):
@@ -510,12 +541,15 @@ def _create_events_template() -> FileTemplate:
         event_dispatcher.subscribe(EventType.USER_CREATED, send_welcome_email)
         event_dispatcher.subscribe(EventType.USER_CREATED, log_user_creation)
         event_dispatcher.subscribe(EventType.PRODUCT_LOW_STOCK, notify_low_stock)
-    """))
+    """),
+    )
 
 
 def _create_exceptions_template() -> FileTemplate:
     """Custom exceptions del dominio."""
-    return FileTemplate("app/core/exceptions.py", dedent("""
+    return FileTemplate(
+        "app/core/exceptions.py",
+        dedent("""
         class AppException(Exception):
             '''
             Excepción base de la aplicación.
@@ -571,14 +605,18 @@ def _create_exceptions_template() -> FileTemplate:
             Error de autorización (permisos insuficientes).
             '''
             pass
-    """))
+    """),
+    )
 
 
 # ==================== app/db/ ====================
 
+
 def _create_db_session_template() -> FileTemplate:
     """AsyncSession factory para SQLAlchemy 2.0."""
-    return FileTemplate("app/db/session.py", dedent("""
+    return FileTemplate(
+        "app/db/session.py",
+        dedent("""
         from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
         from app.core.config import settings
@@ -605,7 +643,7 @@ def _create_db_session_template() -> FileTemplate:
             '''
             Dependency para obtener sesión de DB.
             Creator (GRASP): Responsable de crear sesiones.
-            
+
             Uso en endpoints:
                 async def endpoint(db: AsyncSession = Depends(get_db)):
                     ...
@@ -626,12 +664,15 @@ def _create_db_session_template() -> FileTemplate:
             Cierra conexión a DB (llamado en shutdown).
             '''
             await engine.dispose()
-    """))
+    """),
+    )
 
 
 def _create_db_base_template() -> FileTemplate:
     """Base declarativa de SQLAlchemy."""
-    return FileTemplate("app/db/base.py", dedent("""
+    return FileTemplate(
+        "app/db/base.py",
+        dedent("""
         from sqlalchemy.orm import declarative_base
 
         # Base declarativa para todos los modelos
@@ -641,14 +682,18 @@ def _create_db_base_template() -> FileTemplate:
         from app.models.user import User  # noqa: F401
         from app.models.product import Product  # noqa: F401
         from app.models.order import Order  # noqa: F401
-    """))
+    """),
+    )
 
 
 # ==================== app/models/ ====================
 
+
 def _create_user_model_template() -> FileTemplate:
     """Modelo SQLAlchemy para User."""
-    return FileTemplate("app/models/user.py", dedent("""
+    return FileTemplate(
+        "app/models/user.py",
+        dedent("""
         from sqlalchemy import Boolean, Column, DateTime, Integer, String, func
 
         from app.db.base import Base
@@ -660,7 +705,7 @@ def _create_user_model_template() -> FileTemplate:
             Information Expert (GRASP): Conoce estructura de datos de usuario.
             '''
             __tablename__ = "users"
-            
+
             id = Column(Integer, primary_key=True, index=True)
             email = Column(String(255), unique=True, index=True, nullable=False)
             name = Column(String(255), nullable=False)
@@ -677,12 +722,15 @@ def _create_user_model_template() -> FileTemplate:
                 onupdate=func.now(),
                 nullable=False,
             )
-    """))
+    """),
+    )
 
 
 def _create_product_model_template() -> FileTemplate:
     """Modelo SQLAlchemy para Product."""
-    return FileTemplate("app/models/product.py", dedent("""
+    return FileTemplate(
+        "app/models/product.py",
+        dedent("""
         from sqlalchemy import Column, DateTime, Integer, Numeric, String, func
 
         from app.db.base import Base
@@ -694,7 +742,7 @@ def _create_product_model_template() -> FileTemplate:
             Information Expert (GRASP): Conoce estructura de datos de producto.
             '''
             __tablename__ = "products"
-            
+
             id = Column(Integer, primary_key=True, index=True)
             name = Column(String(255), unique=True, index=True, nullable=False)
             description = Column(String(1024), nullable=True)
@@ -711,12 +759,15 @@ def _create_product_model_template() -> FileTemplate:
                 onupdate=func.now(),
                 nullable=False,
             )
-    """))
+    """),
+    )
 
 
 def _create_order_model_template() -> FileTemplate:
     """Modelo SQLAlchemy para Order."""
-    return FileTemplate("app/models/order.py", dedent("""
+    return FileTemplate(
+        "app/models/order.py",
+        dedent("""
         from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, func
         from sqlalchemy.orm import relationship
 
@@ -729,7 +780,7 @@ def _create_order_model_template() -> FileTemplate:
             Information Expert (GRASP): Conoce estructura de datos de orden.
             '''
             __tablename__ = "orders"
-            
+
             id = Column(Integer, primary_key=True, index=True)
             user_id = Column(
                 Integer,
@@ -749,17 +800,21 @@ def _create_order_model_template() -> FileTemplate:
                 onupdate=func.now(),
                 nullable=False,
             )
-            
+
             # Relationships
             user = relationship("User", backref="orders")
-    """))
+    """),
+    )
 
 
 # ==================== app/schemas/ ====================
 
+
 def _create_user_schema_template() -> FileTemplate:
     """Schemas Pydantic v2 para User."""
-    return FileTemplate("app/schemas/user.py", dedent("""
+    return FileTemplate(
+        "app/schemas/user.py",
+        dedent("""
         from pydantic import BaseModel, EmailStr, ConfigDict
 
 
@@ -785,14 +840,17 @@ def _create_user_schema_template() -> FileTemplate:
             '''Schema de respuesta de usuario.'''
             id: int
             is_active: bool = True
-            
+
             model_config = ConfigDict(from_attributes=True)
-    """))
+    """),
+    )
 
 
 def _create_product_schema_template() -> FileTemplate:
     """Schemas Pydantic v2 para Product."""
-    return FileTemplate("app/schemas/product.py", dedent("""
+    return FileTemplate(
+        "app/schemas/product.py",
+        dedent("""
         from decimal import Decimal
 
         from pydantic import BaseModel, ConfigDict
@@ -822,14 +880,17 @@ def _create_product_schema_template() -> FileTemplate:
         class ProductResponse(ProductBase):
             '''Schema de respuesta de producto.'''
             id: int
-            
+
             model_config = ConfigDict(from_attributes=True)
-    """))
+    """),
+    )
 
 
 def _create_order_schema_template() -> FileTemplate:
     """Schemas Pydantic v2 para Order."""
-    return FileTemplate("app/schemas/order.py", dedent("""
+    return FileTemplate(
+        "app/schemas/order.py",
+        dedent("""
         from decimal import Decimal
 
         from pydantic import BaseModel, ConfigDict
@@ -856,16 +917,20 @@ def _create_order_schema_template() -> FileTemplate:
         class OrderResponse(OrderBase):
             '''Schema de respuesta de orden.'''
             id: int
-            
+
             model_config = ConfigDict(from_attributes=True)
-    """))
+    """),
+    )
 
 
 # ==================== app/repositories/ ====================
 
+
 def _create_base_repository_template() -> FileTemplate:
     """Repository pattern genérico async."""
-    return FileTemplate("app/repositories/base.py", dedent("""
+    return FileTemplate(
+        "app/repositories/base.py",
+        dedent("""
         from typing import Generic, TypeVar, Type
 
         from sqlalchemy import select
@@ -885,17 +950,17 @@ def _create_base_repository_template() -> FileTemplate:
             Single Responsibility (SOLID): Solo queries.
             Open/Closed (SOLID): Extendible por herencia.
             Protected Variations (GRASP): Protege servicios de cambios en ORM.
-            
+
             Beneficios:
             - Cambiar ORM no afecta servicios
             - Fácil mockear en tests
             - Reutilizar queries comunes
             '''
-            
+
             def __init__(self, model: Type[ModelType], db: AsyncSession) -> None:
                 self._model = model
                 self._db = db
-            
+
             async def get_by_id(self, id: int) -> ModelType | None:
                 '''Obtiene entidad por ID'''
                 try:
@@ -905,7 +970,7 @@ def _create_base_repository_template() -> FileTemplate:
                     return result.scalar_one_or_none()
                 except Exception as exc:
                     raise DatabaseError(f"Error fetching {{self._model.__name__}}: {{exc}}")
-            
+
             async def get_all(
                 self,
                 skip: int = 0,
@@ -919,7 +984,7 @@ def _create_base_repository_template() -> FileTemplate:
                     return list(result.scalars().all())
                 except Exception as exc:
                     raise DatabaseError(f"Error fetching {{self._model.__name__}} list: {{exc}}")
-            
+
             async def create(self, entity: ModelType) -> ModelType:
                 '''Crea nueva entidad'''
                 try:
@@ -930,7 +995,7 @@ def _create_base_repository_template() -> FileTemplate:
                 except Exception as exc:
                     await self._db.rollback()
                     raise DatabaseError(f"Error creating {{self._model.__name__}}: {{exc}}")
-            
+
             async def update(self, entity: ModelType) -> ModelType:
                 '''Actualiza entidad existente'''
                 try:
@@ -940,7 +1005,7 @@ def _create_base_repository_template() -> FileTemplate:
                 except Exception as exc:
                     await self._db.rollback()
                     raise DatabaseError(f"Error updating {{self._model.__name__}}: {{exc}}")
-            
+
             async def delete(self, entity: ModelType) -> None:
                 '''Elimina entidad'''
                 try:
@@ -949,19 +1014,22 @@ def _create_base_repository_template() -> FileTemplate:
                 except Exception as exc:
                     await self._db.rollback()
                     raise DatabaseError(f"Error deleting {{self._model.__name__}}: {{exc}}")
-            
+
             async def exists(self, id: int) -> bool:
                 '''Verifica si existe entidad'''
                 result = await self._db.execute(
                     select(self._model.id).where(self._model.id == id)
                 )
                 return result.scalar_one_or_none() is not None
-    """))
+    """),
+    )
 
 
 def _create_user_repository_template() -> FileTemplate:
     """Repository concreto para User."""
-    return FileTemplate("app/repositories/user_repository.py", dedent("""
+    return FileTemplate(
+        "app/repositories/user_repository.py",
+        dedent("""
         from sqlalchemy import select
         from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -973,32 +1041,35 @@ def _create_user_repository_template() -> FileTemplate:
             '''
             Open/Closed (SOLID): Extiende BaseRepository.
             Information Expert (GRASP): Experto en persistencia de usuarios.
-            
+
             Agrega queries específicos de User.
             '''
-            
+
             def __init__(self, db: AsyncSession) -> None:
                 super().__init__(User, db)
-            
+
             async def get_by_email(self, email: str) -> User | None:
                 '''Query específico: buscar por email'''
                 result = await self._db.execute(
                     select(User).where(User.email == email)
                 )
                 return result.scalar_one_or_none()
-            
+
             async def email_exists(self, email: str) -> bool:
                 '''Verifica si email ya existe'''
                 result = await self._db.execute(
                     select(User.id).where(User.email == email)
                 )
                 return result.scalar_one_or_none() is not None
-    """))
+    """),
+    )
 
 
 def _create_product_repository_template() -> FileTemplate:
     """Repository concreto para Product."""
-    return FileTemplate("app/repositories/product_repository.py", dedent("""
+    return FileTemplate(
+        "app/repositories/product_repository.py",
+        dedent("""
         from sqlalchemy.ext.asyncio import AsyncSession
 
         from app.models.product import Product
@@ -1009,15 +1080,18 @@ def _create_product_repository_template() -> FileTemplate:
             '''
             Repository para productos.
             '''
-            
+
             def __init__(self, db: AsyncSession) -> None:
                 super().__init__(Product, db)
-    """))
+    """),
+    )
 
 
 def _create_order_repository_template() -> FileTemplate:
     """Repository concreto para Order."""
-    return FileTemplate("app/repositories/order_repository.py", dedent("""
+    return FileTemplate(
+        "app/repositories/order_repository.py",
+        dedent("""
         from sqlalchemy.ext.asyncio import AsyncSession
 
         from app.models.order import Order
@@ -1028,17 +1102,21 @@ def _create_order_repository_template() -> FileTemplate:
             '''
             Repository para órdenes.
             '''
-            
+
             def __init__(self, db: AsyncSession) -> None:
                 super().__init__(Order, db)
-    """))
+    """),
+    )
 
 
 # ==================== app/services/ ====================
 
+
 def _create_cache_service_template() -> FileTemplate:
     """Singleton para Redis async."""
-    return FileTemplate("app/services/cache_service.py", dedent("""
+    return FileTemplate(
+        "app/services/cache_service.py",
+        dedent("""
         import json
         from functools import lru_cache
         from typing import Any
@@ -1053,45 +1131,45 @@ def _create_cache_service_template() -> FileTemplate:
             Singleton (GoF): Una sola instancia via lru_cache.
             Single Responsibility (SOLID): Solo maneja cache.
             '''
-            
+
             def __init__(self) -> None:
                 if not settings.REDIS_ENABLED:
                     self._client = None
                     return
-                
+
                 self._client = Redis.from_url(
                     settings.REDIS_URL,
                     decode_responses=True
                 )
-            
+
             async def get(self, key: str) -> Any | None:
                 '''Obtiene valor del cache'''
                 if not self._client:
                     return None
-                
+
                 try:
                     value = await self._client.get(key)
                     return json.loads(value) if value else None
                 except Exception:
                     return None
-            
+
             async def set(self, key: str, value: Any, ttl: int = 300) -> bool:
                 '''Guarda valor en cache'''
                 if not self._client:
                     return False
-                
+
                 try:
                     serialized = json.dumps(value)
                     await self._client.setex(key, ttl, serialized)
                     return True
                 except Exception:
                     return False
-            
+
             async def delete(self, pattern: str) -> int:
                 '''Elimina keys que coincidan con el patrón'''
                 if not self._client:
                     return 0
-                
+
                 try:
                     keys = await self._client.keys(pattern)
                     if keys:
@@ -1099,7 +1177,7 @@ def _create_cache_service_template() -> FileTemplate:
                     return 0
                 except Exception:
                     return 0
-            
+
             async def close(self) -> None:
                 '''Cierra conexión'''
                 if self._client:
@@ -1117,12 +1195,15 @@ def _create_cache_service_template() -> FileTemplate:
 
         # Instancia global
         cache = get_cache_service()
-    """))
+    """),
+    )
 
 
 def _create_user_service_template() -> FileTemplate:
     """Service layer para User con lógica de negocio."""
-    return FileTemplate("app/services/user_service.py", dedent("""
+    return FileTemplate(
+        "app/services/user_service.py",
+        dedent("""
         from app.core.events import Event, EventType, event_dispatcher
         from app.core.exceptions import (
             DuplicateEmailError,
@@ -1139,7 +1220,7 @@ def _create_user_service_template() -> FileTemplate:
         class UserService:
             '''
             Service Layer: Lógica de negocio de usuarios.
-            
+
             SOLID:
                 - Single Responsibility: Lógica de negocio de usuarios
                 - Dependency Inversion: Depende de abstracciones (Repository, Cache)
@@ -1148,7 +1229,7 @@ def _create_user_service_template() -> FileTemplate:
                 - Information Expert: Conoce reglas de negocio de usuarios
                 - Low Coupling: Usa repositorio, no accede directamente a DB
             '''
-            
+
             def __init__(
                 self,
                 repository: UserRepository,
@@ -1156,7 +1237,7 @@ def _create_user_service_template() -> FileTemplate:
             ) -> None:
                 self._repository = repository
                 self._cache = cache
-            
+
             async def get_all(
                 self,
                 skip: int = 0,
@@ -1165,37 +1246,37 @@ def _create_user_service_template() -> FileTemplate:
                 '''Obtiene todos los usuarios (con cache)'''
                 cache_key = f"users:list:{{skip}}:{{limit}}"
                 cached = await self._cache.get(cache_key)
-                
+
                 if cached:
                     return [UserResponse(**user) for user in cached]
-                
+
                 users = await self._repository.get_all(skip, limit)
-                
+
                 users_dict = [
                     UserResponse.model_validate(u).model_dump()
                     for u in users
                 ]
                 await self._cache.set(cache_key, users_dict, ttl=300)
-                
+
                 return [UserResponse.model_validate(u) for u in users]
-            
+
             async def get_by_id(self, user_id: int) -> UserResponse:
                 '''Obtiene usuario por ID (con cache)'''
                 cache_key = f"users:id:{{user_id}}"
                 cached = await self._cache.get(cache_key)
-                
+
                 if cached:
                     return UserResponse(**cached)
-                
+
                 user = await self._repository.get_by_id(user_id)
                 if not user:
                     raise InstanceNotFoundError(f"User with id {{user_id}} not found")
-                
+
                 user_dict = UserResponse.model_validate(user).model_dump()
                 await self._cache.set(cache_key, user_dict, ttl=300)
-                
+
                 return UserResponse.model_validate(user)
-            
+
             async def create(self, user_data: UserCreate) -> UserResponse:
                 '''
                 Crea nuevo usuario.
@@ -1207,26 +1288,26 @@ def _create_user_service_template() -> FileTemplate:
                     raise DuplicateEmailError(
                         f"Email {{user_data.email}} already exists"
                     )
-                
+
                 if len(user_data.password) < 8:
                     raise ValidationError("Password must be at least 8 characters")
-                
+
                 # Hash password
                 hashed_password = security.hash_password(user_data.password)
-                
+
                 # Crear entidad
                 user = User(
                     email=user_data.email,
                     name=user_data.name,
                     hashed_password=hashed_password
                 )
-                
+
                 # Persistir
                 created_user = await self._repository.create(user)
-                
+
                 # Invalidar cache
                 await self._cache.delete("users:list:*")
-                
+
                 # Disparar evento
                 await event_dispatcher.dispatch(Event(
                     EventType.USER_CREATED,
@@ -1236,9 +1317,9 @@ def _create_user_service_template() -> FileTemplate:
                         "name": created_user.name
                     }}
                 ))
-                
+
                 return UserResponse.model_validate(created_user)
-            
+
             async def update(
                 self,
                 user_id: int,
@@ -1248,14 +1329,14 @@ def _create_user_service_template() -> FileTemplate:
                 user = await self._repository.get_by_id(user_id)
                 if not user:
                     raise InstanceNotFoundError(f"User with id {{user_id}} not found")
-                
+
                 # Validar email único si se cambia
                 if user_data.email and user_data.email != user.email:
                     if await self._repository.email_exists(user_data.email):
                         raise DuplicateEmailError(
                             f"Email {{user_data.email}} already exists"
                         )
-                
+
                 # Actualizar campos
                 update_data = user_data.model_dump(exclude_unset=True)
                 for field, value in update_data.items():
@@ -1267,33 +1348,36 @@ def _create_user_service_template() -> FileTemplate:
                         )
                     elif field != "password":
                         setattr(user, field, value)
-                
+
                 # Persistir
                 updated_user = await self._repository.update(user)
-                
+
                 # Invalidar cache
                 await self._cache.delete(f"users:id:{{user_id}}")
                 await self._cache.delete("users:list:*")
-                
+
                 return UserResponse.model_validate(updated_user)
-            
+
             async def delete(self, user_id: int) -> None:
                 '''Elimina usuario'''
                 user = await self._repository.get_by_id(user_id)
                 if not user:
                     raise InstanceNotFoundError(f"User with id {{user_id}} not found")
-                
+
                 await self._repository.delete(user)
-                
+
                 # Invalidar cache
                 await self._cache.delete(f"users:id:{{user_id}}")
                 await self._cache.delete("users:list:*")
-    """))
+    """),
+    )
 
 
 def _create_product_service_template() -> FileTemplate:
     """Service layer para Product."""
-    return FileTemplate("app/services/product_service.py", dedent("""
+    return FileTemplate(
+        "app/services/product_service.py",
+        dedent("""
         from app.repositories.product_repository import ProductRepository
         from app.schemas.product import ProductResponse
         from app.services.cache_service import CacheService
@@ -1303,7 +1387,7 @@ def _create_product_service_template() -> FileTemplate:
             '''
             Service Layer: Lógica de negocio de productos.
             '''
-            
+
             def __init__(
                 self,
                 repository: ProductRepository,
@@ -1311,7 +1395,7 @@ def _create_product_service_template() -> FileTemplate:
             ) -> None:
                 self._repository = repository
                 self._cache = cache
-            
+
             async def get_all(
                 self,
                 skip: int = 0,
@@ -1320,12 +1404,15 @@ def _create_product_service_template() -> FileTemplate:
                 '''Obtiene todos los productos'''
                 products = await self._repository.get_all(skip=skip, limit=limit)
                 return [ProductResponse.model_validate(p) for p in products]
-    """))
+    """),
+    )
 
 
 def _create_order_service_template() -> FileTemplate:
     """Service layer para Order."""
-    return FileTemplate("app/services/order_service.py", dedent("""
+    return FileTemplate(
+        "app/services/order_service.py",
+        dedent("""
         from app.repositories.order_repository import OrderRepository
         from app.repositories.product_repository import ProductRepository
         from app.repositories.user_repository import UserRepository
@@ -1338,7 +1425,7 @@ def _create_order_service_template() -> FileTemplate:
             Service Layer: Lógica de negocio de órdenes.
             Ejemplo de servicio que coordina múltiples repositorios.
             '''
-            
+
             def __init__(
                 self,
                 repository: OrderRepository,
@@ -1350,7 +1437,7 @@ def _create_order_service_template() -> FileTemplate:
                 self._product_repository = product_repository
                 self._user_repository = user_repository
                 self._cache = cache
-            
+
             async def get_all(
                 self,
                 skip: int = 0,
@@ -1359,14 +1446,18 @@ def _create_order_service_template() -> FileTemplate:
                 '''Obtiene todas las órdenes'''
                 orders = await self._repository.get_all(skip=skip, limit=limit)
                 return [OrderResponse.model_validate(o) for o in orders]
-    """))
+    """),
+    )
 
 
 # ==================== app/factories/ ====================
 
+
 def _create_service_factory_template() -> FileTemplate:
     """Factory para creación de servicios con dependencias."""
-    return FileTemplate("app/factories/service_factory.py", dedent("""
+    return FileTemplate(
+        "app/factories/service_factory.py",
+        dedent("""
         from sqlalchemy.ext.asyncio import AsyncSession
 
         from app.repositories.order_repository import OrderRepository
@@ -1383,25 +1474,25 @@ def _create_service_factory_template() -> FileTemplate:
             Factory (GoF): Centraliza creación de servicios.
             Creator (GRASP): Responsable de crear servicios con dependencias.
             Single Responsibility (SOLID): Solo crea servicios.
-            
+
             Beneficios:
             - Oculta complejidad de construcción
             - Centraliza inyección de dependencias
             - Facilita testing (mockear factory)
             '''
-            
+
             @staticmethod
             def create_user_service(db: AsyncSession) -> UserService:
                 '''Crea UserService con todas sus dependencias'''
                 repository = UserRepository(db)
                 return UserService(repository, cache)
-            
+
             @staticmethod
             def create_product_service(db: AsyncSession) -> ProductService:
                 '''Crea ProductService con todas sus dependencias'''
                 repository = ProductRepository(db)
                 return ProductService(repository, cache)
-            
+
             @staticmethod
             def create_order_service(db: AsyncSession) -> OrderService:
                 '''
@@ -1411,21 +1502,25 @@ def _create_service_factory_template() -> FileTemplate:
                 order_repo = OrderRepository(db)
                 product_repo = ProductRepository(db)
                 user_repo = UserRepository(db)
-                
+
                 return OrderService(
                     repository=order_repo,
                     product_repository=product_repo,
                     user_repository=user_repo,
                     cache=cache
                 )
-    """))
+    """),
+    )
 
 
 # ==================== app/api/ ====================
 
+
 def _create_dependencies_template() -> FileTemplate:
     """Dependency Injection para FastAPI."""
-    return FileTemplate("app/api/dependencies.py", dedent("""
+    return FileTemplate(
+        "app/api/dependencies.py",
+        dedent("""
         from typing import Annotated
 
         from fastapi import Depends
@@ -1461,12 +1556,15 @@ def _create_dependencies_template() -> FileTemplate:
         ) -> OrderService:
             '''Inyecta OrderService usando Factory'''
             return ServiceFactory.create_order_service(db)
-    """))
+    """),
+    )
 
 
 def _create_api_router_template() -> FileTemplate:
     """Router principal que agrega todos los endpoints."""
-    return FileTemplate("app/api/v1/router.py", dedent("""
+    return FileTemplate(
+        "app/api/v1/router.py",
+        dedent("""
         from fastapi import APIRouter
 
         from app.api.v1.endpoints import users, products, orders
@@ -1492,14 +1590,18 @@ def _create_api_router_template() -> FileTemplate:
             prefix="/orders",
             tags=["orders"],
         )
-    """))
+    """),
+    )
 
 
 # ==================== app/api/v1/endpoints/ ====================
 
+
 def _create_users_endpoint_template() -> FileTemplate:
     """CRUD endpoints para users."""
-    return FileTemplate("app/api/v1/endpoints/users.py", dedent("""
+    return FileTemplate(
+        "app/api/v1/endpoints/users.py",
+        dedent("""
         from typing import Annotated
 
         from fastapi import APIRouter, Depends, HTTPException, status
@@ -1526,7 +1628,7 @@ def _create_users_endpoint_template() -> FileTemplate:
             '''
             Controller (GRASP): Solo maneja HTTP.
             Single Responsibility (SOLID): Solo endpoints.
-            
+
             Obtiene lista de usuarios con paginación.
             '''
             return await service.get_all(skip, limit)
@@ -1587,12 +1689,15 @@ def _create_users_endpoint_template() -> FileTemplate:
                 await service.delete(user_id)
             except InstanceNotFoundError as exc:
                 raise HTTPException(status_code=404, detail=str(exc))
-    """))
+    """),
+    )
 
 
 def _create_products_endpoint_template() -> FileTemplate:
     """CRUD endpoints para products."""
-    return FileTemplate("app/api/v1/endpoints/products.py", dedent("""
+    return FileTemplate(
+        "app/api/v1/endpoints/products.py",
+        dedent("""
         from typing import Annotated
 
         from fastapi import APIRouter, Depends
@@ -1616,12 +1721,15 @@ def _create_products_endpoint_template() -> FileTemplate:
             Implementa CRUD completo según necesidad.
             '''
             return await service.get_all(skip=skip, limit=limit)
-    """))
+    """),
+    )
 
 
 def _create_orders_endpoint_template() -> FileTemplate:
     """CRUD endpoints para orders."""
-    return FileTemplate("app/api/v1/endpoints/orders.py", dedent("""
+    return FileTemplate(
+        "app/api/v1/endpoints/orders.py",
+        dedent("""
         from typing import Annotated
 
         from fastapi import APIRouter, Depends
@@ -1645,5 +1753,5 @@ def _create_orders_endpoint_template() -> FileTemplate:
             Implementa CRUD completo según necesidad.
             '''
             return await service.get_all(skip=skip, limit=limit)
-    """))
-
+    """),
+    )

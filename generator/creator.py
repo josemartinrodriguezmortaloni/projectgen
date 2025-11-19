@@ -3,6 +3,7 @@ Template Method (GoF): Define algoritmo de creación de proyectos.
 Creator (GRASP): Responsable de crear estructura física del proyecto.
 """
 
+import contextlib
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -21,21 +22,16 @@ class ProjectCreator:
     Template Method (GoF): Define algoritmo de creación en create().
     Single Responsibility (SOLID): Solo crea archivos/directorios.
     Protected Variations (GRASP): Protege contra cambios en I/O.
-    
+
     Uso:
         creator = ProjectCreator("mi-api", Path("mi-api"), options)
         creator.create(progress, task_id)
     """
 
-    def __init__(
-        self,
-        project_name: str,
-        target_path: Path,
-        options: dict[str, Any]
-    ):
+    def __init__(self, project_name: str, target_path: Path, options: dict[str, Any]):
         """
         Dependency Inversion (SOLID): Recibe opciones, no crea config.
-        
+
         Args:
             project_name: Nombre del proyecto.
             target_path: Ruta completa donde crear el proyecto.
@@ -54,14 +50,14 @@ class ProjectCreator:
         """
         Template Method (GoF): Define pasos de creación.
         Information Expert (GRASP): Conoce orden de pasos.
-        
+
         Pasos:
         1. Recolectar templates
         2. Crear directorios
         3. Crear archivos
         4. Inicializar git
         5. Instalar pre-commit hooks
-        
+
         Args:
             progress: Objeto Progress de Rich para mostrar progreso.
             task_id: ID de la tarea de progreso.
@@ -73,7 +69,7 @@ class ProjectCreator:
         progress.update(
             task_id,
             description="[cyan]Recolectando templates...",
-            completed=(current_step / total_steps) * 100
+            completed=(current_step / total_steps) * 100,
         )
         self._collect_templates()
         current_step += 1
@@ -82,7 +78,7 @@ class ProjectCreator:
         progress.update(
             task_id,
             description="[cyan]Creando estructura de directorios...",
-            completed=(current_step / total_steps) * 100
+            completed=(current_step / total_steps) * 100,
         )
         self._create_directories()
         current_step += 1
@@ -91,7 +87,7 @@ class ProjectCreator:
         progress.update(
             task_id,
             description="[cyan]Generando archivos...",
-            completed=(current_step / total_steps) * 100
+            completed=(current_step / total_steps) * 100,
         )
         self._create_files()
         current_step += 1
@@ -100,7 +96,7 @@ class ProjectCreator:
         progress.update(
             task_id,
             description="[cyan]Inicializando repositorio Git...",
-            completed=(current_step / total_steps) * 100
+            completed=(current_step / total_steps) * 100,
         )
         self._initialize_git()
         current_step += 1
@@ -109,36 +105,33 @@ class ProjectCreator:
         progress.update(
             task_id,
             description="[cyan]Configurando pre-commit hooks...",
-            completed=(current_step / total_steps) * 100
+            completed=(current_step / total_steps) * 100,
         )
         self._install_pre_commit()
         current_step += 1
 
         # Paso 6: Finalizar
-        progress.update(
-            task_id,
-            description="[green]✓ Proyecto creado",
-            completed=100
-        )
+        progress.update(task_id, description="[green]✓ Proyecto creado", completed=100)
 
     def _collect_templates(self) -> None:
         """
         Information Expert (GRASP): Sabe qué templates necesita.
         Strategy (GoF): Diferentes conjuntos según opciones.
-        
+
         Recolecta todos los templates necesarios según las opciones.
         """
         # Siempre incluir app y config
-        self._templates.extend(get_app_templates(
-            project_name=self._project_name,
-            hash_algo=self._options["hash_algo"]
-        ))
+        self._templates.extend(
+            get_app_templates(project_name=self._project_name, hash_algo=self._options["hash_algo"])
+        )
 
-        self._templates.extend(get_config_templates(
-            project_name=self._project_name,
-            include_docker=self._options["include_docker"],
-            include_cicd=self._options.get("include_cicd", True)
-        ))
+        self._templates.extend(
+            get_config_templates(
+                project_name=self._project_name,
+                include_docker=self._options["include_docker"],
+                include_cicd=self._options.get("include_cicd", True),
+            )
+        )
 
         # Condicional: tests
         if self._options["include_tests"]:
@@ -147,7 +140,7 @@ class ProjectCreator:
     def _create_directories(self) -> None:
         """
         Pure Fabrication (GRASP): Lógica técnica, no de dominio.
-        
+
         Crea todos los directorios necesarios para los archivos.
         """
         dirs = self._extract_directories()
@@ -158,7 +151,7 @@ class ProjectCreator:
     def _extract_directories(self) -> set[Path]:
         """
         Helper: Extrae directorios únicos de templates.
-        
+
         Returns:
             Set de rutas de directorios necesarios.
         """
@@ -178,7 +171,7 @@ class ProjectCreator:
     def _create_files(self) -> None:
         """
         Protected Variations (GRASP): Protege contra cambios en I/O.
-        
+
         Crea todos los archivos a partir de los templates.
         """
         for template in self._templates:
@@ -198,7 +191,7 @@ class ProjectCreator:
     def _initialize_git(self) -> None:
         """
         Inicializa repositorio git si no existe.
-        
+
         Operación opcional que no bloquea si falla.
         """
         git_dir = self._target_path / ".git"
@@ -208,11 +201,7 @@ class ProjectCreator:
         try:
             # git init
             subprocess.run(
-                ["git", "init"],
-                cwd=self._target_path,
-                check=True,
-                capture_output=True,
-                timeout=10
+                ["git", "init"], cwd=self._target_path, check=True, capture_output=True, timeout=10
             )
 
             # git add .gitignore
@@ -221,7 +210,7 @@ class ProjectCreator:
                 cwd=self._target_path,
                 check=True,
                 capture_output=True,
-                timeout=10
+                timeout=10,
             )
         except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
             # Git es opcional, no bloquea si falla
@@ -230,18 +219,16 @@ class ProjectCreator:
     def _install_pre_commit(self) -> None:
         """
         Instala hooks de pre-commit si está disponible.
-        
+
         Operación opcional que no bloquea si falla.
         """
-        try:
+        with contextlib.suppress(
+            subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired
+        ):
             subprocess.run(
                 ["pre-commit", "install"],
                 cwd=self._target_path,
                 check=True,
                 capture_output=True,
-                timeout=30
+                timeout=30,
             )
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-            # Pre-commit es opcional, no bloquea si falla
-            pass
-
