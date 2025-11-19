@@ -893,8 +893,11 @@ def _create_readme_template(project_name: str) -> FileTemplate:
         ### Logs
 
         ```bash
-        # View API logs
+        # View API logs (docker-compose)
         docker-compose logs -f api
+
+        # View API logs (docker)
+        docker logs mi-api
 
         # View PostgreSQL logs
         docker-compose logs -f db
@@ -906,11 +909,36 @@ def _create_readme_template(project_name: str) -> FileTemplate:
         ### Database Access
 
         ```bash
-        # Connect to PostgreSQL
+        # Connect to PostgreSQL (docker-compose)
         docker-compose exec db psql -U postgres -d mi_api
+
+        # Connect to PostgreSQL (docker)
+        docker exec -it mi-api-db psql -U postgres -d mi_api
 
         # Connect to Redis
         docker-compose exec redis redis-cli
+        ```
+
+        ### Docker Management
+
+        ```bash
+        # Run migrations
+        docker exec mi-api alembic upgrade head
+
+        # Create new migration
+        docker exec mi-api alembic revision --autogenerate -m "description"
+
+        # Restart services
+        docker-compose restart
+
+        # View service status
+        docker ps
+
+        # Stop all services
+        docker-compose down
+
+        # Stop and remove volumes
+        docker-compose down -v
         ```
 
         ## 📖 Additional Documentation
