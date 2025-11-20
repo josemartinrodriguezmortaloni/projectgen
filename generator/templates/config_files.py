@@ -191,6 +191,7 @@ def _create_pyproject_toml_template(project_name: str) -> FileTemplate:
             "pytest>=8.3.0",
             "pytest-asyncio>=0.24.0",
             "httpx>=0.28.0",
+            "aiosqlite>=0.20.0",
             "pre-commit>=4.0.0",
         ]
 
