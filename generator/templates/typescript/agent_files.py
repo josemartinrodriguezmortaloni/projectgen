@@ -27,16 +27,16 @@ def get_agent_templates(
         FileTemplate("src/agents/chat/dto/chat-request.dto.ts", get_chat_dto()),
     ]
 
-    # Tools - siempre estructura básica
-    if full:
-        templates.append(
-            FileTemplate("src/agents/tools/tools.service.ts", get_tools_service_full())
-        )
-        templates.append(FileTemplate("src/agents/tools/tools.module.ts", get_tools_module()))
-    else:
-        templates.append(
-            FileTemplate("src/agents/tools/tools.service.ts", get_tools_service_scaffold())
-        )
+    # Tools - solo si full=True o include_rag=True (sincronizado con get_agents_module)
+    if full or include_rag:
+        if full:
+            templates.append(
+                FileTemplate("src/agents/tools/tools.service.ts", get_tools_service_full())
+            )
+        else:
+            templates.append(
+                FileTemplate("src/agents/tools/tools.service.ts", get_tools_service_scaffold())
+            )
         templates.append(FileTemplate("src/agents/tools/tools.module.ts", get_tools_module()))
 
     # RAG - solo si se incluye

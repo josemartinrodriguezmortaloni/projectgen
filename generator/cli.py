@@ -354,8 +354,8 @@ class CLI:
             if args.type == "python":
                 table.add_row("Hash", f"{args.hash_algo.upper()}")
             else:
-                table.add_row("Pkg Manager", args.package_manager)
-                table.add_row("LLM Default", args.default_llm)
+                table.add_row("Pkg Manager", getattr(args, "package_manager", "pnpm"))
+                table.add_row("LLM Default", getattr(args, "default_llm", "gpt-5.1"))
                 table.add_row("RAG System", "Yes" if getattr(args, "include_rag", False) else "No")
                 table.add_row(
                     "Queue System", "Yes" if getattr(args, "include_queue", False) else "No"
@@ -404,8 +404,9 @@ class CLI:
             options["hash_algo"] = args.hash_algo
             creator = PythonProjectCreator(args.project_name, target_path, options)
         else:
-            options["package_manager"] = args.package_manager
-            options["default_llm"] = args.default_llm
+            # Usar getattr() con defaults para evitar AttributeError en modo no interactivo
+            options["package_manager"] = getattr(args, "package_manager", "pnpm")
+            options["default_llm"] = getattr(args, "default_llm", "gpt-5.1")
             options["include_rag"] = getattr(args, "include_rag", False)
             options["include_queue"] = getattr(args, "include_queue", False)
             options["full"] = getattr(args, "full", False)
@@ -459,7 +460,7 @@ class CLI:
         )
 
     def _show_typescript_success(self, args: argparse.Namespace) -> None:
-        pm = args.package_manager
+        pm = getattr(args, "package_manager", "pnpm")
         run_cmd = "npm run" if pm == "npm" else pm
 
         # Árbol de estructura TypeScript
