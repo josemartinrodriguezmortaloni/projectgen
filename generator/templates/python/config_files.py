@@ -401,120 +401,120 @@ def _create_alembic_env_template() -> FileTemplate:
     return FileTemplate(
         "alembic/env.py",
         dedent("""
-import asyncio
-import sys
-from logging.config import fileConfig
+        import asyncio
+        import sys
+        from logging.config import fileConfig
 
-# Windows: configure ProactorEventLoop to avoid issues with asyncpg
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+        # Windows: configure ProactorEventLoop to avoid issues with asyncpg
+        if sys.platform == "win32":
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+        from sqlalchemy import pool
+        from sqlalchemy.engine import Connection
+        from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from alembic import context
+        from alembic import context
 
-from app.core.config import settings
-# Import base.py to execute model imports
-# This registers all models in Base.metadata
-import app.db.base  # noqa: F401
-# Then import Base from base_class to access metadata
-from app.db.base_class import Base
+        from app.core.config import settings
+        # Import base.py to execute model imports
+        # This registers all models in Base.metadata
+        import app.db.base  # noqa: F401
+        # Then import Base from base_class to access metadata
+        from app.db.base_class import Base
 
-# Alembic configuration
-config = context.config
+        # Alembic configuration
+        config = context.config
 
-# Configure logging
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+        # Configure logging
+        if config.config_file_name is not None:
+            fileConfig(config.config_file_name)
 
-# Override sqlalchemy.url with settings URL
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+        # Override sqlalchemy.url with settings URL
+        config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
-# Metadata for autogenerating migrations
-# Base.metadata contains all models imported in base.py
-target_metadata = Base.metadata
-
-
-def run_migrations_offline() -> None:
-    '''
-    Run migrations in 'offline' mode.
-    Does not require active DB connection.
-    '''
-    url = config.get_main_option("sqlalchemy.url")
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
-        compare_type=True,
-    )
-
-    with context.begin_transaction():
-        context.run_migrations()
+        # Metadata for autogenerating migrations
+        # Base.metadata contains all models imported in base.py
+        target_metadata = Base.metadata
 
 
-def do_run_migrations(connection: Connection) -> None:
-    '''
-    Helper to run migrations with connection.
-    '''
-    context.configure(
-        connection=connection,
-        target_metadata=target_metadata,
-        compare_type=True,
-    )
+        def run_migrations_offline() -> None:
+            '''
+            Run migrations in 'offline' mode.
+            Does not require active DB connection.
+            '''
+            url = config.get_main_option("sqlalchemy.url")
+            context.configure(
+                url=url,
+                target_metadata=target_metadata,
+                literal_binds=True,
+                dialect_opts={"paramstyle": "named"},
+                compare_type=True,
+            )
 
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-async def run_async_migrations() -> None:
-    '''
-    Run migrations in async mode.
-    '''
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
-    try:
-        async with connectable.connect() as connection:
-            await connection.run_sync(do_run_migrations)
-    except Exception as e:
-        # Provide clearer error message
-        url = config.get_main_option("sqlalchemy.url")
-        raise RuntimeError(
-            f"Error connecting to database: {e}\n"
-            f"Connection URL: {url}\n"
-            f"Make sure the database is running and accessible."
-        ) from e
-    finally:
-        await connectable.dispose()
+            with context.begin_transaction():
+                context.run_migrations()
 
 
-def run_migrations_online() -> None:
-    '''
-    Run migrations in 'online' mode.
-    Requires active DB connection (async mode).
-    Robust event loop handling for Windows.
-    '''
-    # Create a new event loop explicitly to avoid issues on Windows
-    # when there are existing or closed event loops
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(run_async_migrations())
-    finally:
-        loop.close()
+        def do_run_migrations(connection: Connection) -> None:
+            '''
+            Helper to run migrations with connection.
+            '''
+            context.configure(
+                connection=connection,
+                target_metadata=target_metadata,
+                compare_type=True,
+            )
+
+            with context.begin_transaction():
+                context.run_migrations()
 
 
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
-"""),
+        async def run_async_migrations() -> None:
+            '''
+            Run migrations in async mode.
+            '''
+            connectable = async_engine_from_config(
+                config.get_section(config.config_ini_section, {}),
+                prefix="sqlalchemy.",
+                poolclass=pool.NullPool,
+            )
+
+            try:
+                async with connectable.connect() as connection:
+                    await connection.run_sync(do_run_migrations)
+            except Exception as e:
+                # Provide clearer error message
+                url = config.get_main_option("sqlalchemy.url")
+                raise RuntimeError(
+                    f"Error connecting to database: {e}\\n"
+                    f"Connection URL: {url}\\n"
+                    f"Make sure the database is running and accessible."
+                ) from e
+            finally:
+                await connectable.dispose()
+
+
+        def run_migrations_online() -> None:
+            '''
+            Run migrations in 'online' mode.
+            Requires active DB connection (async mode).
+            Robust event loop handling for Windows.
+            '''
+            # Create a new event loop explicitly to avoid issues on Windows
+            # when there are existing or closed event loops
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(run_async_migrations())
+            finally:
+                loop.close()
+
+
+        if context.is_offline_mode():
+            run_migrations_offline()
+        else:
+            run_migrations_online()
+    """),
     )
 
 
@@ -1181,3 +1181,4 @@ def get_cicd_templates(project_name: str) -> list[FileTemplate]:
         _create_github_release_workflow_template(project_name),
         _create_github_testpypi_workflow_template(project_name),
     ]
+

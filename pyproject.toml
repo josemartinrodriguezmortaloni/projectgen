@@ -1,14 +1,14 @@
 [project]
 name = "projectgen"
 version = "1.0.0"
-description = "Generador CLI de proyectos de Python con arquitectura limpia (SOLID + GoF + GRASP)"
+description = "Generador CLI multi-lenguaje: Python (FastAPI) y TypeScript (NestJS AI Agents)"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
 ]
-keywords = ["fastapi", "generator", "template", "cli", "architecture", "solid", "clean-code", "python", "project-generator"]
+keywords = ["fastapi", "nestjs", "generator", "template", "cli", "ai-agents", "typescript", "python", "architecture", "solid", "clean-code"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

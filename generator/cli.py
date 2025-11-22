@@ -15,6 +15,8 @@ from rich.table import Table
 from rich.tree import Tree
 
 from generator.creator import ProjectCreator
+from generator.python_creator import PythonProjectCreator
+from generator.typescript_creator import TypeScriptProjectCreator
 from generator.validator import ValidationError, create_validator_chain
 
 console = Console()
@@ -30,7 +32,7 @@ class CLI:
     - Parsear argumentos
     - Mostrar UI con Rich
     - Validar entrada
-    - Delegar creación a ProjectCreator
+    - Delegar creación a ProjectCreator adecuado (Factory Method implícito)
     """
 
     def __init__(self):
@@ -48,9 +50,9 @@ class CLI:
             ArgumentParser configurado.
         """
         parser = argparse.ArgumentParser(
-            description="🚀 Generador de proyectos FastAPI con arquitectura limpia",
+            description="🚀 Generador de proyectos Multi-lenguaje (Python & TypeScript)",
             formatter_class=argparse.RawDescriptionHelpFormatter,
-            epilog="Ejemplo: python -m template-proyects mi-api --hash-algo argon2\n"
+            epilog="Ejemplo: python -m template-proyects my-api --type python\n"
             "         python -m template-proyects  # Modo interactivo completo",
         )
 
@@ -58,6 +60,12 @@ class CLI:
             "project_name",
             nargs="?",  # Make optional
             help="Nombre del proyecto (ej: mi-api, backend-service). Si no se provee, se preguntará interactivamente",
+        )
+
+        parser.add_argument(
+            "--type",
+            choices=["python", "typescript"],
+            help="Tipo de proyecto a generar (python | typescript)",
         )
 
         parser.add_argument(
@@ -83,11 +91,46 @@ class CLI:
             help="No generar archivos de CI/CD (.github/workflows/)",
         )
 
+        # Opciones Python
         parser.add_argument(
             "--hash-algo",
             choices=["bcrypt", "argon2"],
             default="argon2",
-            help="Algoritmo de hash de passwords (default: argon2)",
+            help="[Python] Algoritmo de hash de passwords (default: argon2)",
+        )
+
+        # Opciones TypeScript
+        parser.add_argument(
+            "--package-manager",
+            choices=["pnpm", "npm", "yarn"],
+            default="pnpm",
+            help="[TypeScript] Gestor de paquetes (default: pnpm)",
+        )
+
+        parser.add_argument(
+            "--non-interactive",
+            action="store_true",
+            help="Ejecutar sin preguntas interactivas (usar defaults para opciones no especificadas)",
+        )
+
+        # TS Options
+        parser.add_argument(
+            "--default-llm",
+            choices=["gpt-5.1", "claude-sonnet-4.5", "claude-opus-4.1", "gemini-3"],
+            default="gpt-5.1",
+            help="[TypeScript] Modelo LLM por defecto",
+        )
+
+        parser.add_argument(
+            "--include-rag",
+            action="store_true",
+            help="[TypeScript] Incluir sistema RAG",
+        )
+
+        parser.add_argument(
+            "--include-queue",
+            action="store_true",
+            help="[TypeScript] Incluir sistema de colas (BullMQ)",
         )
 
         return parser
@@ -120,13 +163,13 @@ class CLI:
             self._show_success(parsed)
             return 0
         except ValidationError as exc:
-            console.print(f"\n[red]✗ Error de validación:[/red] {exc}")
+            console.print(f"\n[red]! Error de validación:[/red] {exc}")
             return 1
         except KeyboardInterrupt:
-            console.print("\n[yellow]⚠ Cancelado por usuario[/yellow]")
+            console.print("\n[yellow]! Cancelado por usuario[/yellow]")
             return 130
         except Exception as exc:
-            console.print(f"\n[red]✗ Error inesperado:[/red] {exc}")
+            console.print(f"\n[red]! Error inesperado:[/red] {exc}")
             console.print_exception()
             return 1
 
@@ -137,9 +180,9 @@ class CLI:
         console.print()
         console.print(
             Panel.fit(
-                "[bold cyan]FastAPI Template Generator[/bold cyan]\n"
+                "[bold cyan]Project Generator CLI[/bold cyan]\n"
                 "[dim]Arquitectura limpia con SOLID + GoF + GRASP[/dim]\n"
-                "[dim]FastAPI 0.115+ | PostgreSQL 16 | SQLAlchemy 2.0 async[/dim]",
+                "[dim]Soporte: Python (FastAPI) & TypeScript (NestJS)[/dim]",
                 border_style="cyan",
                 box=box.DOUBLE,
             )
@@ -149,12 +192,6 @@ class CLI:
     def _validate(self, args: argparse.Namespace) -> None:
         """
         Delega validación a cadena de validadores.
-
-        Args:
-            args: Argumentos parseados.
-
-        Raises:
-            ValidationError: Si alguna validación falla.
         """
         target_path = args.output_dir / args.project_name
 
@@ -166,72 +203,109 @@ class CLI:
         """
         Prompts user for all configuration options interactively.
         Pattern: Template Method - defines fixed sequence of prompts
-
-        Args:
-            args: Initial arguments (may have some values pre-filled from CLI)
-
-        Returns:
-            Updated namespace with user's choices
         """
-        console.print("[bold cyan]📋 Configuración del proyecto[/bold cyan]\n")
+        if args.non_interactive:
+            if not args.project_name:
+                args.project_name = "my-app"
+            if not args.type:
+                args.type = "typescript"
+            return args
 
-        # Project name (if not provided via CLI)
+        console.print("[bold cyan]Configuration[/bold cyan]\n")
+
+        # 1. Project Type (First Question)
+        if not args.type:
+            args.type = Prompt.ask(
+                "  [cyan]Tipo de proyecto[/cyan]",
+                choices=["python", "typescript"],
+                default="typescript",
+            )
+
+        # 2. Project Name
         if not args.project_name:
-            args.project_name = Prompt.ask("  [cyan]Nombre del proyecto[/cyan]", default="my-api")
+            args.project_name = Prompt.ask("  [cyan]Nombre del proyecto[/cyan]", default="my-app")
 
-        # Output directory (always prompt unless explicitly set via CLI)
+        # 3. Output Directory
         if args.output_dir == Path.cwd():  # Default value, not explicitly set
             output_dir_str = Prompt.ask(
                 "  [cyan]Directorio donde crear el proyecto[/cyan]", default=str(Path.cwd())
             )
             args.output_dir = Path(output_dir_str).expanduser().resolve()
 
-        # Docker
+        # Common Options
         include_docker = Confirm.ask(
             "  [cyan]¿Incluir Docker y docker-compose?[/cyan]", default=not args.no_docker
         )
         args.no_docker = not include_docker
 
-        # Tests
         include_tests = Confirm.ask(
             "  [cyan]¿Incluir directorio de tests?[/cyan]", default=not args.no_tests
         )
         args.no_tests = not include_tests
 
-        # CI/CD
         include_cicd = Confirm.ask(
             "  [cyan]¿Incluir GitHub Actions CI/CD?[/cyan]", default=not args.no_cicd
         )
         args.no_cicd = not include_cicd
 
-        # Hash algorithm
+        # Language Specific Options
+        if args.type == "python":
+            self._get_python_config(args)
+        else:
+            self._get_typescript_config(args)
+
+        console.print()
+        return args
+
+    def _get_python_config(self, args: argparse.Namespace) -> None:
+        """Prompts específicos para Python."""
+        console.print("\n[dim]Configuración Python (FastAPI)[/dim]")
         args.hash_algo = Prompt.ask(
             "  [cyan]Algoritmo de hash para passwords[/cyan]",
             choices=["argon2", "bcrypt"],
             default=args.hash_algo,
         )
 
-        console.print()
-        return args
+    def _get_typescript_config(self, args: argparse.Namespace) -> None:
+        """Prompts específicos para TypeScript."""
+        console.print("\n[dim]Configuración TypeScript (NestJS)[/dim]")
+        
+        args.package_manager = Prompt.ask(
+            "  [cyan]Package Manager[/cyan]",
+            choices=["pnpm", "npm", "yarn"],
+            default="pnpm",
+        )
+
+        # Default LLM Model
+        args.default_llm = Prompt.ask(
+            "  [cyan]Modelo LLM por defecto[/cyan]",
+            choices=["gpt-5.1", "claude-sonnet-4.5", "claude-opus-4.1", "gemini-3"],
+            default="gpt-5.1",
+        )
+
+        # RAG System
+        args.include_rag = Confirm.ask(
+            "  [cyan]¿Incluir sistema RAG (pgvector + embeddings)?[/cyan]",
+            default=False
+        )
+
+        # Queue System
+        args.include_queue = Confirm.ask(
+            "  [cyan]¿Incluir sistema de colas (BullMQ)?[/cyan]",
+            default=False
+        )
 
     def _confirm_creation(self, args: argparse.Namespace) -> argparse.Namespace:
         """
         Rich UI: Muestra resumen y permite reconfigurar.
-        Pattern: Template Method with loop for reconfiguration
-
-        Args:
-            args: Argumentos parseados.
-
-        Returns:
-            Confirmed (possibly modified) arguments.
-
-        Raises:
-            KeyboardInterrupt: Si usuario cancela definitivamente.
         """
+        if args.non_interactive:
+            return args
+
         while True:
             # Tabla de configuración
             table = Table(
-                title="⚙️  Configuración del proyecto",
+                title=f"Project Configuration ({args.type})",
                 show_header=False,
                 box=box.ROUNDED,
                 border_style="blue",
@@ -239,12 +313,20 @@ class CLI:
             table.add_column("Opción", style="cyan bold", width=20)
             table.add_column("Valor", style="green")
 
-            table.add_row("📛 Nombre", args.project_name)
-            table.add_row("📁 Directorio", str(args.output_dir / args.project_name))
-            table.add_row("🐳 Docker", "❌ No" if args.no_docker else "✅ Sí")
-            table.add_row("🧪 Tests", "❌ No" if args.no_tests else "✅ Sí")
-            table.add_row("🔄 CI/CD", "❌ No" if args.no_cicd else "✅ Sí")
-            table.add_row("🔐 Hash", f"✅ {args.hash_algo.upper()}")
+            table.add_row("Name", args.project_name)
+            table.add_row("Directory", str(args.output_dir / args.project_name))
+            table.add_row("Language", args.type.capitalize())
+            table.add_row("Docker", "No" if args.no_docker else "Yes")
+            table.add_row("Tests", "No" if args.no_tests else "Yes")
+            table.add_row("CI/CD", "No" if args.no_cicd else "Yes")
+
+            if args.type == "python":
+                table.add_row("Hash", f"{args.hash_algo.upper()}")
+            else:
+                table.add_row("Pkg Manager", args.package_manager)
+                table.add_row("LLM Default", args.default_llm)
+                table.add_row("RAG System", "Yes" if getattr(args, "include_rag", False) else "No")
+                table.add_row("Queue System", "Yes" if getattr(args, "include_queue", False) else "No")
 
             console.print(table)
             console.print()
@@ -266,23 +348,30 @@ class CLI:
     def _create_project(self, args: argparse.Namespace) -> None:
         """
         Delega creación a ProjectCreator con Rich progress.
-
-        Args:
-            args: Argumentos parseados.
+        Factory Method: Decide qué Creator instanciar.
         """
         target_path = args.output_dir / args.project_name
 
-        # Preparar opciones
+        # Opciones comunes
         options = {
             "include_docker": not args.no_docker,
             "include_tests": not args.no_tests,
             "include_cicd": not args.no_cicd,
-            "hash_algo": args.hash_algo,
             "overwrite": args.overwrite,
         }
 
-        # Crear instancia de ProjectCreator
-        creator = ProjectCreator(args.project_name, target_path, options)
+        # Crear instancia de ProjectCreator según tipo
+        creator: ProjectCreator
+        
+        if args.type == "python":
+            options["hash_algo"] = args.hash_algo
+            creator = PythonProjectCreator(args.project_name, target_path, options)
+        else:
+            options["package_manager"] = args.package_manager
+            options["default_llm"] = args.default_llm
+            options["include_rag"] = getattr(args, "include_rag", False)
+            options["include_queue"] = getattr(args, "include_queue", False)
+            creator = TypeScriptProjectCreator(args.project_name, target_path, options)
 
         # Mostrar progreso con Rich
         with Progress(
@@ -299,58 +388,63 @@ class CLI:
     def _show_success(self, args: argparse.Namespace) -> None:
         """
         Rich UI: Árbol de estructura + comandos siguientes.
-
-        Args:
-            args: Argumentos parseados.
         """
         console.print()
-        console.print("[bold green]✓ ¡Proyecto creado exitosamente![/bold green]\n")
+        console.print("[bold green]Project created successfully![/bold green]\n")
 
-        # Árbol de estructura
-        tree = Tree(f"📁 [bold cyan]{args.project_name}[/bold cyan]", guide_style="bright_blue")
+        if args.type == "python":
+            self._show_python_success(args)
+        else:
+            self._show_typescript_success(args)
 
-        app_node = tree.add("📁 [bold]app[/bold] - Código de la aplicación")
-        app_node.add("📄 main.py - Entry point FastAPI")
-
-        api_node = app_node.add("📁 api - Capa de presentación (HTTP)")
-        api_node.add("📁 v1/endpoints - CRUD endpoints (users, products, orders)")
-
-        app_node.add("📁 core - Config, security, events")
-        app_node.add("📁 services - Lógica de negocio (Service Layer)")
-        app_node.add("📁 repositories - Acceso a datos (Repository pattern)")
-        app_node.add("📁 models - Modelos SQLAlchemy")
-        app_node.add("📁 schemas - Schemas Pydantic")
-
-        if not args.no_tests:
-            tree.add("📁 [bold]tests[/bold] - Tests unitarios e integración")
-
-        if not args.no_docker:
-            tree.add("🐳 docker-compose.yml - Postgres + Redis + API")
-            tree.add("🐳 Dockerfile - Imagen de la app")
-
-        tree.add("📄 pyproject.toml - Deps + ruff config")
-        tree.add("📄 .pre-commit-config.yaml - Git hooks")
-        tree.add("📄 alembic.ini - Configuración migrations")
-
+    def _show_python_success(self, args: argparse.Namespace) -> None:
+        # Árbol de estructura Python (simplificado)
+        tree = Tree(f"[bold cyan]{args.project_name}[/bold cyan]", guide_style="bright_blue")
+        tree.add("app/")
+        tree.add("tests/")
+        tree.add("pyproject.toml")
         console.print(tree)
         console.print()
 
-        # Panel con comandos siguientes
         console.print(
             Panel(
-                f"[bold white]Siguientes pasos:[/bold white]\n\n"
+                f"[bold white]Next steps:[/bold white]\n\n"
                 f"[cyan]1.[/cyan] cd {args.project_name}\n"
-                f"[cyan]2.[/cyan] uv sync                    [dim]# Instalar dependencias[/dim]\n"
-                f"[cyan]3.[/cyan] docker-compose up -d       [dim]# Levantar Postgres + Redis[/dim]\n"
-                f"[cyan]4.[/cyan] alembic upgrade head        [dim]# Ejecutar migraciones[/dim]\n"
-                f"[cyan]5.[/cyan] uv run uvicorn app.main:app --reload\n\n"
-                f"[bold green]API disponible en:[/bold green] "
-                f"[link=http://localhost:8000]http://localhost:8000[/link]\n"
-                f"[bold green]Docs interactivos:[/bold green] "
-                f"[link=http://localhost:8000/docs]http://localhost:8000/docs[/link]\n"
-                f"[bold green]ReDoc:[/bold green] "
-                f"[link=http://localhost:8000/redoc]http://localhost:8000/redoc[/link]",
-                title="🚀 [bold]¡Listo para desarrollar![/bold]",
+                f"[cyan]2.[/cyan] uv sync\n"
+                f"[cyan]3.[/cyan] docker-compose up -d\n"
+                f"[cyan]4.[/cyan] alembic upgrade head\n"
+                f"[cyan]5.[/cyan] uv run uvicorn app.main:app --reload",
+                title="[bold]Python API Ready[/bold]",
+                border_style="green",
+                box=box.DOUBLE,
+            )
+        )
+
+    def _show_typescript_success(self, args: argparse.Namespace) -> None:
+        pm = args.package_manager
+        run_cmd = "npm run" if pm == "npm" else pm
+
+        # Árbol de estructura TypeScript
+        tree = Tree(f"[bold cyan]{args.project_name}[/bold cyan]", guide_style="bright_blue")
+        src = tree.add("src/")
+        src.add("agents/ (LLM Agnostic Core)")
+        src.add("database/ (Drizzle ORM)")
+        src.add("config/")
+        tree.add("package.json")
+        tree.add("docker-compose.yml")
+        console.print(tree)
+        console.print()
+
+        console.print(
+            Panel(
+                f"[bold white]Next steps:[/bold white]\n\n"
+                f"[cyan]1.[/cyan] cd {args.project_name}\n"
+                f"[cyan]2.[/cyan] {pm} install\n"
+                f"[cyan]3.[/cyan] docker-compose up -d db redis\n"
+                f"[cyan]4.[/cyan] {run_cmd} db:push\n"
+                f"[cyan]5.[/cyan] {run_cmd} start:dev\n\n"
+                f"[bold green]API Docs:[/bold green] http://localhost:3000/api/docs",
+                title="[bold]NestJS AI Agent Ready[/bold]",
                 border_style="green",
                 box=box.DOUBLE,
             )

@@ -1769,3 +1769,4 @@ def _create_orders_endpoint_template() -> FileTemplate:
             return await service.get_all(skip=skip, limit=limit)
     """),
     )
+

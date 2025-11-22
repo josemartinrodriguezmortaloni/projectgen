@@ -5,41 +5,29 @@ Creator (GRASP): Responsable de crear estructura física del proyecto.
 
 import contextlib
 import subprocess
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
 from rich.progress import Progress
 
-from generator.templates.app_files import get_app_templates
 from generator.templates.base import FileTemplate
-from generator.templates.config_files import get_config_templates
-from generator.templates.test_files import get_test_templates
 
 
-class ProjectCreator:
+class ProjectCreator(ABC):
     """
     Creator (GRASP): Responsable de crear estructura del proyecto.
     Template Method (GoF): Define algoritmo de creación en create().
     Single Responsibility (SOLID): Solo crea archivos/directorios.
     Protected Variations (GRASP): Protege contra cambios en I/O.
-
-    Uso:
-        creator = ProjectCreator("mi-api", Path("mi-api"), options)
-        creator.create(progress, task_id)
     """
 
     def __init__(self, project_name: str, target_path: Path, options: dict[str, Any]):
         """
-        Dependency Inversion (SOLID): Recibe opciones, no crea config.
-
         Args:
             project_name: Nombre del proyecto.
             target_path: Ruta completa donde crear el proyecto.
-            options: Diccionario con opciones de creación:
-                - include_docker: bool
-                - include_tests: bool
-                - hash_algo: str ("bcrypt" o "argon2")
-                - overwrite: bool
+            options: Diccionario con opciones de creación.
         """
         self._project_name = project_name
         self._target_path = target_path
@@ -51,18 +39,11 @@ class ProjectCreator:
         Template Method (GoF): Define pasos de creación.
         Information Expert (GRASP): Conoce orden de pasos.
 
-        Pasos:
-        1. Recolectar templates
-        2. Crear directorios
-        3. Crear archivos
-        4. Inicializar git
-        5. Instalar pre-commit hooks
-
         Args:
             progress: Objeto Progress de Rich para mostrar progreso.
             task_id: ID de la tarea de progreso.
         """
-        total_steps = 6
+        total_steps = 7  # Added dependency installation as potential step
         current_step = 0
 
         # Paso 1: Recolectar templates
@@ -101,7 +82,16 @@ class ProjectCreator:
         self._initialize_git()
         current_step += 1
 
-        # Paso 5: Instalar pre-commit
+        # Paso 5: Instalar dependencias (Hook opcional)
+        progress.update(
+            task_id,
+            description="[cyan]Instalando dependencias...",
+            completed=(current_step / total_steps) * 100,
+        )
+        self._install_dependencies()
+        current_step += 1
+
+        # Paso 6: Instalar pre-commit
         progress.update(
             task_id,
             description="[cyan]Configurando pre-commit hooks...",
@@ -110,37 +100,26 @@ class ProjectCreator:
         self._install_pre_commit()
         current_step += 1
 
-        # Paso 6: Finalizar
+        # Paso 7: Finalizar
         progress.update(task_id, description="[green]✓ Proyecto creado", completed=100)
 
+    @abstractmethod
     def _collect_templates(self) -> None:
         """
-        Information Expert (GRASP): Sabe qué templates necesita.
-        Strategy (GoF): Diferentes conjuntos según opciones.
-
-        Recolecta todos los templates necesarios según las opciones.
+        Hook: cada creator define sus templates específicos.
         """
-        # Siempre incluir app y config
-        self._templates.extend(
-            get_app_templates(project_name=self._project_name, hash_algo=self._options["hash_algo"])
-        )
+        pass
 
-        self._templates.extend(
-            get_config_templates(
-                project_name=self._project_name,
-                include_docker=self._options["include_docker"],
-                include_cicd=self._options.get("include_cicd", True),
-            )
-        )
-
-        # Condicional: tests
-        if self._options["include_tests"]:
-            self._templates.extend(get_test_templates())
+    def _install_dependencies(self) -> None:
+        """
+        Hook opcional para instalar dependencias después de crear archivos.
+        Por defecto no hace nada (útil para npm/pnpm install en TS).
+        """
+        pass
 
     def _create_directories(self) -> None:
         """
         Pure Fabrication (GRASP): Lógica técnica, no de dominio.
-
         Crea todos los directorios necesarios para los archivos.
         """
         dirs = self._extract_directories()
@@ -151,9 +130,6 @@ class ProjectCreator:
     def _extract_directories(self) -> set[Path]:
         """
         Helper: Extrae directorios únicos de templates.
-
-        Returns:
-            Set de rutas de directorios necesarios.
         """
         dirs: set[Path] = {Path(".")}  # Raíz siempre
 
@@ -171,14 +147,13 @@ class ProjectCreator:
     def _create_files(self) -> None:
         """
         Protected Variations (GRASP): Protege contra cambios en I/O.
-
         Crea todos los archivos a partir de los templates.
         """
         for template in self._templates:
             file_path = self._target_path / template.relative_path
 
             # Skip si ya existe y no se quiere sobrescribir
-            if file_path.exists() and not self._options["overwrite"]:
+            if file_path.exists() and not self._options.get("overwrite", False):
                 continue
 
             # Asegurar que el directorio padre existe
@@ -191,8 +166,6 @@ class ProjectCreator:
     def _initialize_git(self) -> None:
         """
         Inicializa repositorio git si no existe.
-
-        Operación opcional que no bloquea si falla.
         """
         git_dir = self._target_path / ".git"
         if git_dir.exists():
@@ -205,23 +178,26 @@ class ProjectCreator:
             )
 
             # git add .gitignore
-            subprocess.run(
-                ["git", "add", ".gitignore"],
-                cwd=self._target_path,
-                check=True,
-                capture_output=True,
-                timeout=10,
-            )
+            # Solo si existe .gitignore
+            if (self._target_path / ".gitignore").exists():
+                subprocess.run(
+                    ["git", "add", ".gitignore"],
+                    cwd=self._target_path,
+                    check=True,
+                    capture_output=True,
+                    timeout=10,
+                )
         except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
             # Git es opcional, no bloquea si falla
             pass
 
     def _install_pre_commit(self) -> None:
         """
-        Instala hooks de pre-commit si está disponible.
-
-        Operación opcional que no bloquea si falla.
+        Instala hooks de pre-commit si está disponible y hay configuración.
         """
+        if not (self._target_path / ".pre-commit-config.yaml").exists():
+            return
+
         with contextlib.suppress(
             subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired
         ):
