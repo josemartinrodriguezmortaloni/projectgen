@@ -26,10 +26,12 @@ def get_config_templates(
     ]
 
     if include_docker:
-        templates.extend([
-            _create_dockerfile_template(package_manager),
-            _create_docker_compose_template(project_name),
-        ])
+        templates.extend(
+            [
+                _create_dockerfile_template(package_manager),
+                _create_docker_compose_template(project_name),
+            ]
+        )
 
     if include_cicd:
         templates.append(_create_github_workflow_template(package_manager))
@@ -69,10 +71,12 @@ def _create_package_json_template(project_name: str, include_queue: bool) -> Fil
     ]
 
     if include_queue:
-        dependencies.extend([
-            '"@nestjs/bullmq": "^10.1.0"',
-            '"bullmq": "^5.4.1"',
-        ])
+        dependencies.extend(
+            [
+                '"@nestjs/bullmq": "^10.1.0"',
+                '"bullmq": "^5.4.1"',
+            ]
+        )
 
     devDependencies = [
         '"@nestjs/cli": "^10.0.0"',
@@ -383,7 +387,7 @@ def _create_github_workflow_template(package_manager: str) -> FileTemplate:
                 node-version: '20'
                 cache: '{package_manager if package_manager != "npm" else "npm"}'
             
-            {f"- name: Install pnpm\\n      uses: pnpm/action-setup@v2\\n      with:\\n        version: 8" if package_manager == "pnpm" else ""}
+            {"- name: Install pnpm\\n      uses: pnpm/action-setup@v2\\n      with:\\n        version: 8" if package_manager == "pnpm" else ""}
 
             - name: Install dependencies
               run: {install_cmd}
@@ -533,4 +537,3 @@ def _create_readme_template(project_name: str, package_manager: str) -> FileTemp
         ```
         """),
     )
-

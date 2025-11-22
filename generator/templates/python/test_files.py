@@ -589,4 +589,3 @@ def _create_integration_test_users_endpoint_template() -> FileTemplate:
             assert "at least 8 characters" in response.json()["detail"]
     """),
     )
-

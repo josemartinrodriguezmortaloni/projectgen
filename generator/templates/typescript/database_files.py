@@ -60,7 +60,7 @@ def _create_schema_template(include_pgvector: bool) -> FileTemplate:
     """src/database/schema.ts: Database definitions."""
     vector_import = ""
     vector_column = ""
-    
+
     if include_pgvector:
         vector_import = "import { vector } from 'drizzle-orm/pg-core';"
         vector_column = "embedding: vector('embedding', { dimensions: 1536 }),"
@@ -138,4 +138,3 @@ def _create_drizzle_config_template() -> FileTemplate:
         });
         """),
     )
-

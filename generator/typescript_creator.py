@@ -28,9 +28,7 @@ class TypeScriptProjectCreator(ProjectCreator):
 
         # 3. Database Module (Drizzle + PostgreSQL)
         self._templates.extend(
-            get_database_templates(
-                include_pgvector=self._options.get("include_rag", False)
-            )
+            get_database_templates(include_pgvector=self._options.get("include_rag", False))
         )
 
         # 4. Configuration & Infrastructure (Docker, CI/CD, package.json)
@@ -52,4 +50,3 @@ class TypeScriptProjectCreator(ProjectCreator):
         El usuario suele preferir hacerlo manualmente o via script separado.
         """
         pass
-

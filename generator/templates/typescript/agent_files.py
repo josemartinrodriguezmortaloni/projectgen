@@ -637,4 +637,3 @@ def _create_chat_dto_template() -> FileTemplate:
         }
         """),
     )
-

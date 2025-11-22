@@ -269,7 +269,7 @@ class CLI:
     def _get_typescript_config(self, args: argparse.Namespace) -> None:
         """Prompts específicos para TypeScript."""
         console.print("\n[dim]Configuración TypeScript (NestJS)[/dim]")
-        
+
         args.package_manager = Prompt.ask(
             "  [cyan]Package Manager[/cyan]",
             choices=["pnpm", "npm", "yarn"],
@@ -285,14 +285,12 @@ class CLI:
 
         # RAG System
         args.include_rag = Confirm.ask(
-            "  [cyan]¿Incluir sistema RAG (pgvector + embeddings)?[/cyan]",
-            default=False
+            "  [cyan]¿Incluir sistema RAG (pgvector + embeddings)?[/cyan]", default=False
         )
 
         # Queue System
         args.include_queue = Confirm.ask(
-            "  [cyan]¿Incluir sistema de colas (BullMQ)?[/cyan]",
-            default=False
+            "  [cyan]¿Incluir sistema de colas (BullMQ)?[/cyan]", default=False
         )
 
     def _confirm_creation(self, args: argparse.Namespace) -> argparse.Namespace:
@@ -326,7 +324,9 @@ class CLI:
                 table.add_row("Pkg Manager", args.package_manager)
                 table.add_row("LLM Default", args.default_llm)
                 table.add_row("RAG System", "Yes" if getattr(args, "include_rag", False) else "No")
-                table.add_row("Queue System", "Yes" if getattr(args, "include_queue", False) else "No")
+                table.add_row(
+                    "Queue System", "Yes" if getattr(args, "include_queue", False) else "No"
+                )
 
             console.print(table)
             console.print()
@@ -362,7 +362,7 @@ class CLI:
 
         # Crear instancia de ProjectCreator según tipo
         creator: ProjectCreator
-        
+
         if args.type == "python":
             options["hash_algo"] = args.hash_algo
             creator = PythonProjectCreator(args.project_name, target_path, options)

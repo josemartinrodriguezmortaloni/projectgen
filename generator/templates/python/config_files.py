@@ -1181,4 +1181,3 @@ def get_cicd_templates(project_name: str) -> list[FileTemplate]:
         _create_github_release_workflow_template(project_name),
         _create_github_testpypi_workflow_template(project_name),
     ]
-

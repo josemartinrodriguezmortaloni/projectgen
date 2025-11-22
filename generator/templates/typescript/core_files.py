@@ -291,4 +291,3 @@ def _create_prettierrc_template() -> FileTemplate:
         }
         """),
     )
-

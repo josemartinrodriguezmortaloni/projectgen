@@ -32,4 +32,3 @@ class PythonProjectCreator(ProjectCreator):
         # Tests templates (Conditional)
         if self._options["include_tests"]:
             self._templates.extend(get_test_templates())
-
