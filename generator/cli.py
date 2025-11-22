@@ -133,6 +133,18 @@ class CLI:
             help="[TypeScript] Incluir sistema de colas (BullMQ)",
         )
 
+        parser.add_argument(
+            "--scaffold-only",
+            action="store_true",
+            help="[TypeScript] Generar scaffold mínimo (default) - solo estructura básica",
+        )
+
+        parser.add_argument(
+            "--full",
+            action="store_true",
+            help="[TypeScript] Generar implementación completa con ejemplos funcionando",
+        )
+
         return parser
 
     def run(self, args: list[str] | None = None) -> int:
@@ -293,6 +305,27 @@ class CLI:
             "  [cyan]¿Incluir sistema de colas (BullMQ)?[/cyan]", default=False
         )
 
+        # Generation Level (scaffold vs full)
+        if not hasattr(args, "full") or not args.full:
+            args.full = False
+        if not hasattr(args, "scaffold_only") or not args.scaffold_only:
+            args.scaffold_only = False
+
+        # Si no se especificó ningún flag, preguntar
+        if not args.full and not args.scaffold_only:
+            generation_level = Prompt.ask(
+                "  [cyan]Nivel de generación[/cyan]",
+                choices=["scaffold", "full"],
+                default="scaffold",
+                help="scaffold: estructura básica funcional mínima | full: implementación completa",
+            )
+            args.full = generation_level == "full"
+            args.scaffold_only = generation_level == "scaffold"
+        elif args.full:
+            args.scaffold_only = False
+        else:
+            args.scaffold_only = True
+
     def _confirm_creation(self, args: argparse.Namespace) -> argparse.Namespace:
         """
         Rich UI: Muestra resumen y permite reconfigurar.
@@ -327,6 +360,10 @@ class CLI:
                 table.add_row(
                     "Queue System", "Yes" if getattr(args, "include_queue", False) else "No"
                 )
+                generation_mode = (
+                    "Full (completo)" if getattr(args, "full", False) else "Scaffold (mínimo)"
+                )
+                table.add_row("Generation", generation_mode)
 
             console.print(table)
             console.print()
@@ -371,6 +408,7 @@ class CLI:
             options["default_llm"] = args.default_llm
             options["include_rag"] = getattr(args, "include_rag", False)
             options["include_queue"] = getattr(args, "include_queue", False)
+            options["full"] = getattr(args, "full", False)
             creator = TypeScriptProjectCreator(args.project_name, target_path, options)
 
         # Mostrar progreso con Rich

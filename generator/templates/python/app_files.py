@@ -1023,7 +1023,7 @@ def _create_base_repository_template() -> FileTemplate:
             async def delete(self, entity: ModelType) -> None:
                 '''Elimina entidad'''
                 try:
-                    await self._db.delete(entity)
+                    self._db.delete(entity)
                     await self._db.commit()
                 except Exception as exc:
                     await self._db.rollback()

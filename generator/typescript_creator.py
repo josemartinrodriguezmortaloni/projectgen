@@ -23,6 +23,7 @@ class TypeScriptProjectCreator(ProjectCreator):
             get_agent_templates(
                 default_model=self._options.get("default_llm", "gpt-5.1"),
                 include_rag=self._options.get("include_rag", False),
+                full=self._options.get("full", False),
             )
         )
 
