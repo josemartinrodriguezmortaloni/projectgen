@@ -22,6 +22,77 @@ from generator.validator import ValidationError, create_validator_chain
 console = Console()
 
 
+# Presets Configuration
+PRESETS = {
+    "chatbot-simple": {
+        "type": "typescript",
+        "package_manager": "pnpm",
+        "default_llm": "gpt-5.1",
+        "include_rag": False,
+        "include_queue": False,
+        "full": False,
+        "scaffold_only": True,
+        "description": "Chatbot simple con estructura básica (scaffold)",
+    },
+    "rag-enterprise": {
+        "type": "typescript",
+        "package_manager": "pnpm",
+        "default_llm": "gpt-5.1",
+        "include_rag": True,
+        "include_queue": True,
+        "full": True,
+        "scaffold_only": False,
+        "description": "Sistema RAG empresarial completo con colas y embeddings",
+    },
+    "multi-agent-system": {
+        "type": "typescript",
+        "package_manager": "pnpm",
+        "default_llm": "gpt-5.1",
+        "include_rag": True,
+        "include_queue": True,
+        "full": True,
+        "scaffold_only": False,
+        "description": "Sistema multi-agente completo con RAG, colas y múltiples modelos",
+    },
+}
+
+
+def apply_preset(args: argparse.Namespace, preset_name: str) -> None:
+    """
+    Strategy (GoF): Aplica configuración de preset a args.
+
+    Args:
+        args: Namespace de argumentos.
+        preset_name: Nombre del preset a aplicar.
+    """
+    if preset_name not in PRESETS:
+        raise ValueError(f"Preset desconocido: {preset_name}")
+
+    preset = PRESETS[preset_name]
+
+    # Aplicar configuración del preset
+    if not hasattr(args, "type") or not args.type:
+        args.type = preset["type"]
+
+    if args.type == "typescript":
+        # Aplicar solo si no están explícitamente configurados
+        # Para strings/defaults: verificar si está en su valor por defecto
+        if not hasattr(args, "package_manager") or args.package_manager == "pnpm":
+            args.package_manager = preset.get("package_manager", "pnpm")
+        if not hasattr(args, "default_llm") or args.default_llm == "gpt-5.1":
+            args.default_llm = preset.get("default_llm", "gpt-5.1")
+        # Para flags booleanos: argparse siempre crea el atributo con False por defecto,
+        # así que verificamos si el valor actual es False (default) antes de aplicar el preset
+        if not hasattr(args, "include_rag") or not args.include_rag:
+            args.include_rag = preset.get("include_rag", False)
+        if not hasattr(args, "include_queue") or not args.include_queue:
+            args.include_queue = preset.get("include_queue", False)
+        if not hasattr(args, "full") or not args.full:
+            args.full = preset.get("full", False)
+        if not hasattr(args, "scaffold_only") or not args.scaffold_only:
+            args.scaffold_only = preset.get("scaffold_only", False)
+
+
 class CLI:
     """
     Controller (GRASP): Coordina flujo sin hacer trabajo pesado.
@@ -52,10 +123,40 @@ class CLI:
         parser = argparse.ArgumentParser(
             description="🚀 Generador de proyectos Multi-lenguaje (Python & TypeScript)",
             formatter_class=argparse.RawDescriptionHelpFormatter,
-            epilog="Ejemplo: python -m template-proyects my-api --type python\n"
-            "         python -m template-proyects  # Modo interactivo completo",
+            epilog="Ejemplos:\n"
+            "  python -m template-proyects my-api --type python\n"
+            "  python -m template-proyects --preset chatbot-simple\n"
+            "  python -m template-proyects update --add-rag\n"
+            "  python -m template-proyects  # Modo interactivo completo",
         )
 
+        # Subparsers para comandos create/update
+        subparsers = parser.add_subparsers(dest="command", help="Comando a ejecutar")
+        subparsers.required = False  # Default a 'create' si no se especifica
+
+        # ===== CREATE COMMAND (default) =====
+        create_parser = subparsers.add_parser(
+            "create",
+            help="Crear nuevo proyecto (comando por defecto)",
+            description="Crea un nuevo proyecto desde cero",
+        )
+        self._add_create_arguments(create_parser)
+
+        # ===== UPDATE COMMAND =====
+        update_parser = subparsers.add_parser(
+            "update",
+            help="Actualizar proyecto existente",
+            description="Agrega funcionalidades a un proyecto existente",
+        )
+        self._add_update_arguments(update_parser)
+
+        # Agregar argumentos también al parser principal para backward compatibility
+        self._add_create_arguments(parser)
+
+        return parser
+
+    def _add_create_arguments(self, parser: argparse.ArgumentParser) -> None:
+        """Agrega argumentos para el comando create."""
         parser.add_argument(
             "project_name",
             nargs="?",  # Make optional
@@ -145,7 +246,32 @@ class CLI:
             help="[TypeScript] Generar implementación completa con ejemplos funcionando",
         )
 
-        return parser
+        # Presets
+        preset_choices = list(PRESETS.keys())
+        parser.add_argument(
+            "--preset",
+            choices=preset_choices,
+            help=f"[TypeScript] Preset de configuración rápida. Opciones: {', '.join(preset_choices)}",
+        )
+
+    def _add_update_arguments(self, parser: argparse.ArgumentParser) -> None:
+        """Agrega argumentos para el comando update."""
+        parser.add_argument(
+            "--add-rag",
+            action="store_true",
+            help="Agregar sistema RAG (pgvector + embeddings) al proyecto existente",
+        )
+        parser.add_argument(
+            "--add-queue",
+            action="store_true",
+            help="Agregar sistema de colas (BullMQ) al proyecto existente",
+        )
+        parser.add_argument(
+            "--project-dir",
+            type=Path,
+            default=Path.cwd(),
+            help="Directorio del proyecto a actualizar (default: directorio actual)",
+        )
 
     def run(self, args: list[str] | None = None) -> int:
         """
@@ -159,8 +285,20 @@ class CLI:
         """
         parsed = self._parser.parse_args(args)
 
+        # Si no se especificó comando, default a 'create'
+        if not hasattr(parsed, "command") or not parsed.command:
+            parsed.command = "create"
+
         try:
             self._show_header()
+
+            # Manejar comando update
+            if parsed.command == "update":
+                return self._handle_update(parsed)
+
+            # Aplicar preset si se especificó
+            if hasattr(parsed, "preset") and parsed.preset:
+                apply_preset(parsed, parsed.preset)
 
             # Interactive configuration (always, but uses CLI args as defaults)
             parsed = self._get_interactive_config(parsed)
@@ -225,6 +363,29 @@ class CLI:
 
         console.print("[bold cyan]Configuration[/bold cyan]\n")
 
+        # 0. Presets (si no se especificó uno por CLI y es TypeScript)
+        if not hasattr(args, "preset") or not args.preset:
+            # Mostrar opción de presets solo para TypeScript o si no se ha seleccionado tipo
+            if not args.type or args.type == "typescript":
+                console.print("[dim]Presets disponibles (opcionales):[/dim]")
+                for preset_name, preset_config in PRESETS.items():
+                    console.print(f"  [cyan]{preset_name}[/cyan]: {preset_config['description']}")
+                console.print()
+
+                preset_choice = Prompt.ask(
+                    "  [cyan]Usar preset rápido? (opcional, presiona Enter para saltar)[/cyan]",
+                    choices=["none"] + list(PRESETS.keys()),
+                    default="none",
+                )
+                if preset_choice != "none":
+                    args.preset = preset_choice
+                    apply_preset(args, preset_choice)
+                    console.print(f"[green]✓[/green] Preset '{preset_choice}' aplicado")
+                    console.print(
+                        "[dim]Puedes modificar estas opciones en las siguientes preguntas si lo deseas[/dim]\n"
+                    )
+                    # Continuar con el flujo normal (no retornar aquí, dejar que siga)
+
         # 1. Project Type (First Question)
         if not args.type:
             args.type = Prompt.ask(
@@ -285,24 +446,26 @@ class CLI:
         args.package_manager = Prompt.ask(
             "  [cyan]Package Manager[/cyan]",
             choices=["pnpm", "npm", "yarn"],
-            default="pnpm",
+            default=getattr(args, "package_manager", "pnpm"),
         )
 
         # Default LLM Model
         args.default_llm = Prompt.ask(
             "  [cyan]Modelo LLM por defecto[/cyan]",
             choices=["gpt-5.1", "claude-sonnet-4.5", "claude-opus-4.1", "gemini-3"],
-            default="gpt-5.1",
+            default=getattr(args, "default_llm", "gpt-5.1"),
         )
 
         # RAG System
         args.include_rag = Confirm.ask(
-            "  [cyan]¿Incluir sistema RAG (pgvector + embeddings)?[/cyan]", default=False
+            "  [cyan]¿Incluir sistema RAG (pgvector + embeddings)?[/cyan]",
+            default=getattr(args, "include_rag", False),
         )
 
         # Queue System
         args.include_queue = Confirm.ask(
-            "  [cyan]¿Incluir sistema de colas (BullMQ)?[/cyan]", default=False
+            "  [cyan]¿Incluir sistema de colas (BullMQ)?[/cyan]",
+            default=getattr(args, "include_queue", False),
         )
 
         # Generation Level (scaffold vs full)
@@ -314,10 +477,9 @@ class CLI:
         # Si no se especificó ningún flag, preguntar
         if not args.full and not args.scaffold_only:
             generation_level = Prompt.ask(
-                "  [cyan]Nivel de generación[/cyan]",
+                "  [cyan]Nivel de generación[/cyan] (scaffold: estructura básica | full: implementación completa)",
                 choices=["scaffold", "full"],
                 default="scaffold",
-                help="scaffold: estructura básica funcional mínima | full: implementación completa",
             )
             args.full = generation_level == "full"
             args.scaffold_only = generation_level == "scaffold"
@@ -488,6 +650,68 @@ class CLI:
                 box=box.DOUBLE,
             )
         )
+
+    def _handle_update(self, args: argparse.Namespace) -> int:
+        """
+        Maneja el comando update para agregar funcionalidades a proyectos existentes.
+
+        Args:
+            args: Argumentos parseados del comando update.
+
+        Returns:
+            Exit code (0 = success, 1 = error).
+        """
+        project_dir = args.project_dir
+
+        # Validar que el proyecto existe
+        if not project_dir.exists():
+            console.print(f"[red]! Error:[/red] El directorio '{project_dir}' no existe")
+            return 1
+
+        # Detectar tipo de proyecto
+        is_typescript = (project_dir / "package.json").exists()
+        is_python = (project_dir / "pyproject.toml").exists()
+
+        if not is_typescript and not is_python:
+            console.print("[red]! Error:[/red] No se pudo detectar el tipo de proyecto")
+            console.print(
+                "   El directorio debe contener 'package.json' (TypeScript) o 'pyproject.toml' (Python)"
+            )
+            return 1
+
+        if not is_typescript:
+            console.print(
+                "[yellow]! Nota:[/yellow] El comando 'update' solo está disponible para proyectos TypeScript actualmente"
+            )
+            return 1
+
+        # Mostrar qué se va a agregar
+        features_to_add = []
+        if getattr(args, "add_rag", False):
+            features_to_add.append("RAG (pgvector + embeddings)")
+        if getattr(args, "add_queue", False):
+            features_to_add.append("Queue (BullMQ)")
+
+        if not features_to_add:
+            console.print("[yellow]! No se especificaron funcionalidades para agregar[/yellow]")
+            console.print("   Usa: projectgen update --add-rag o --add-queue")
+            return 1
+
+        console.print(f"[cyan]Actualizando proyecto en:[/cyan] {project_dir}\n")
+        console.print("[cyan]Funcionalidades a agregar:[/cyan]")
+        for feature in features_to_add:
+            console.print(f"  [green]✓[/green] {feature}")
+        console.print()
+
+        # TODO: Implementar lógica de actualización
+        # Por ahora, mostrar mensaje informativo
+        console.print("[yellow]⚠[/yellow] El comando 'update' está en desarrollo")
+        console.print(
+            "   Por ahora, puedes agregar estas funcionalidades manualmente o regenerar el proyecto"
+        )
+        console.print()
+
+        return 0
 
 
 def main() -> None:
